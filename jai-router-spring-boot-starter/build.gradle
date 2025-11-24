@@ -1,0 +1,10 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    implementation project(':jai-router-core')
+    implementation "org.springframework.boot:spring-boot-autoconfigure:3.2.0"
+    implementation "org.springframework:spring-context:6.1.0"
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:3.2.0"
+}
