@@ -1,4 +1,0 @@
-jai:
-  router:
-    llm:
-      provider: builtin-ai
