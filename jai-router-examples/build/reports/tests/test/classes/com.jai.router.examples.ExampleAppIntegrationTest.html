@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - ExampleAppIntegrationTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>ExampleAppIntegrationTest</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/com.jai.router.examples.html">com.jai.router.examples</a> &gt; ExampleAppIntegrationTest</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">1</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">0.451s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a href="#">Tests</a>
+</li>
+<li>
+<a href="#">Standard output</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">postRouteReturnsDecision()</td>
+<td class="success">0.451s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+<div class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>23:18:58.044 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jai.router.examples.ExampleAppIntegrationTest]: ExampleAppIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+23:18:58.088 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jai.router.examples.ExampleApp for test class com.jai.router.examples.ExampleAppIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.0)
+
+2025-11-24T23:18:58.245+01:00  INFO 4599 --- [    Test worker] c.j.r.e.ExampleAppIntegrationTest        : Starting ExampleAppIntegrationTest using Java 17.0.16 with PID 4599 (started by rrezartprebreza in /Users/rrezartprebreza/Desktop/JAI/JAI-Router/jai-router-examples)
+2025-11-24T23:18:58.246+01:00  INFO 4599 --- [    Test worker] c.j.r.e.ExampleAppIntegrationTest        : No active profile set, falling back to 1 default profile: &quot;default&quot;
+2025-11-24T23:18:58.575+01:00  INFO 4599 --- [    Test worker] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 0 (http)
+2025-11-24T23:18:58.580+01:00  INFO 4599 --- [    Test worker] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-11-24T23:18:58.580+01:00  INFO 4599 --- [    Test worker] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.16]
+2025-11-24T23:18:58.604+01:00  INFO 4599 --- [    Test worker] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-11-24T23:18:58.605+01:00  INFO 4599 --- [    Test worker] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 350 ms
+2025-11-24T23:18:58.739+01:00  INFO 4599 --- [    Test worker] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 52936 (http) with context path ''
+2025-11-24T23:18:58.743+01:00  INFO 4599 --- [    Test worker] c.j.r.e.ExampleAppIntegrationTest        : Started ExampleAppIntegrationTest in 0.608 seconds (process running for 1.038)
+2025-11-24T23:18:59.140+01:00  INFO 4599 --- [o-auto-1-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-11-24T23:18:59.140+01:00  INFO 4599 --- [o-auto-1-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-11-24T23:18:59.141+01:00  INFO 4599 --- [o-auto-1-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2025-11-24T23:18:59.154+01:00  INFO 4599 --- [o-auto-1-exec-1] com.jai.router.examples.ExampleApp       : Routing decision service='bi-service' confidence=0.9
+</pre>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 8.14</a> at Nov 24, 2025, 11:18:59 PM</p>
+</div>
+</div>
+</body>
+</html>

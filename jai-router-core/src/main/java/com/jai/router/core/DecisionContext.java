@@ -1,14 +1,20 @@
-
 package com.jai.router.core;
 
-public class DecisionContext {
-    private final String payload;
-
-    public DecisionContext(String payload) {
-        this.payload = payload;
+/**
+ * Immutable decision context holding the raw payload used for routing decisions.
+ */
+public record DecisionContext(String payload) {
+    public DecisionContext {
+        if (payload == null) {
+            throw new IllegalArgumentException("Payload cannot be null or empty");
+        }
+        payload = payload.trim();
+        if (payload.isEmpty()) {
+            throw new IllegalArgumentException("Payload cannot be null or empty");
+        }
     }
 
-    public String getPayload() {
-        return payload;
+    public static DecisionContext of(String payload) {
+        return new DecisionContext(payload);
     }
 }

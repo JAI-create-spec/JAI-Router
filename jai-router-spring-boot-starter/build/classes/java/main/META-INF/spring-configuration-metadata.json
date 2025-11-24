@@ -1,0 +1,18 @@
+{
+  "groups": [
+    {
+      "name": "jai.router.builtin",
+      "type": "com.jai.router.starter.BuiltinAiProperties",
+      "sourceType": "com.jai.router.starter.BuiltinAiProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "jai.router.builtin.keywords",
+      "type": "java.util.Map<java.lang.String,java.lang.String>",
+      "description": "Map from keyword to service id",
+      "sourceType": "com.jai.router.starter.BuiltinAiProperties"
+    }
+  ],
+  "hints": []
+}
