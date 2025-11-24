@@ -1,0 +1,13 @@
+# Mark build output and reports as generated so GitHub Linguist ignores them
+/build/** linguist-generated=true
+/jai-router-core/build/** linguist-generated=true
+/jai-router-examples/build/** linguist-generated=true
+/jai-router-spring-boot-starter/build/** linguist-generated=true
+
+# Mark docs and README as documentation
+/README.md linguist-documentation=true
+/*.md linguist-documentation=true
+
+# If you have vendor or third-party folders, mark them as vendored
+# /vendor/** linguist-vendored=true
+

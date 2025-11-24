@@ -1,0 +1,20 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Intellij
+.idea/
+*.iml
+
+# Logs and runtime
+*.log
+jai.pid
+jai-run.log
+
+# OS
+.DS_Store
+
+# Misc
+/out/
+
