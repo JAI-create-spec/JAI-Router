@@ -1,5 +1,6 @@
 package com.jai.router.core;
 
+import com.jai.router.core.registry.ServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,25 @@ public final class BuiltinAiLlmClient implements LlmClient {
             "default-service",
             0.5
         );
+    }
+
+    /**
+     * Create a new BuiltinAiLlmClient with custom keywords and a runtime ServiceRegistry.
+     * The matcher will bind to the registry and receive dynamic updates.
+     */
+    public BuiltinAiLlmClient(Map<String, String> serviceKeywords, ServiceRegistry registry) {
+        if (serviceKeywords == null) {
+            throw new LlmClientException("serviceKeywords must not be null");
+        }
+        ScoringKeywordMatcher m = new ScoringKeywordMatcher(
+            serviceKeywords,
+            "default-service",
+            0.5
+        );
+        if (registry != null) {
+            m.bindRegistry(registry);
+        }
+        this.matcher = m;
     }
 
     @Override

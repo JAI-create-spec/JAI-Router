@@ -1,5 +1,8 @@
 package com.jai.router.core;
 
+import com.jai.router.core.registry.RegistryListener;
+import com.jai.router.core.registry.ServiceDescriptor;
+import com.jai.router.core.registry.ServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,10 +21,11 @@ import java.util.regex.Pattern;
  *   <li>Supports multiple keyword matches</li>
  * </ul>
  */
-public class ScoringKeywordMatcher implements KeywordMatcher {
+public class ScoringKeywordMatcher implements KeywordMatcher, RegistryListener {
     private static final Logger log = LoggerFactory.getLogger(ScoringKeywordMatcher.class);
     
-    private final Map<String, KeywordConfig> keywords;
+    // mutable map to support dynamic updates from registry
+    private volatile Map<String, KeywordConfig> keywords;
     private final String defaultService;
     private final double defaultConfidence;
     
@@ -45,7 +49,7 @@ public class ScoringKeywordMatcher implements KeywordMatcher {
         this.defaultConfidence = defaultConfidence;
         this.keywords = buildKeywordConfigs(keywordMap);
     }
-    
+
     @Override
     public MatchResult findBestMatch(String text) {
         String lowerText = text.toLowerCase();
@@ -53,7 +57,8 @@ public class ScoringKeywordMatcher implements KeywordMatcher {
         String bestService = defaultService;
         String bestExplanation = "No keywords matched";
         
-        for (var entry : keywords.entrySet()) {
+        Map<String, KeywordConfig> snapshot = this.keywords; // volatile read
+        for (var entry : snapshot.entrySet()) {
             String keyword = entry.getKey();
             KeywordConfig config = entry.getValue();
             
@@ -120,9 +125,82 @@ public class ScoringKeywordMatcher implements KeywordMatcher {
      */
     private Map<String, KeywordConfig> buildKeywordConfigs(Map<String, String> keywordMap) {
         Map<String, KeywordConfig> configs = new HashMap<>();
-        keywordMap.forEach((keyword, service) -> {
-            configs.put(keyword, new KeywordConfig(service, 1.0));
-        });
+        if (keywordMap != null) {
+            keywordMap.forEach((keyword, service) -> {
+                if (keyword != null && service != null) {
+                    configs.put(keyword.toLowerCase(), new KeywordConfig(service, 1.0));
+                }
+            });
+        }
         return Collections.unmodifiableMap(configs);
+    }
+
+    /**
+     * Bind a runtime ServiceRegistry so this matcher receives updates.
+     */
+    public void bindRegistry(ServiceRegistry registry) {
+        if (registry == null) return;
+        // subscribe
+        registry.addListener(this);
+        // perform initial sync
+        rebuildFromRegistry(registry.list());
+    }
+
+    /**
+     * Rebuild keyword map from a list of ServiceDescriptor entries.
+     */
+    private synchronized void rebuildFromRegistry(List<ServiceDescriptor> descriptors) {
+        Map<String, String> map = new HashMap<>();
+        for (var d : descriptors) {
+            if (d.keywords() != null) {
+                for (var kw : d.keywords()) {
+                    if (kw != null && !kw.isBlank()) {
+                        map.put(kw.toLowerCase(), d.id());
+                    }
+                }
+            }
+        }
+        // merge current static keywords with registry-provided ones
+        Map<String, KeywordConfig> merged = new HashMap<>(this.keywords);
+        for (var e : buildKeywordConfigs(map).entrySet()) {
+            merged.put(e.getKey(), e.getValue());
+        }
+        this.keywords = Collections.unmodifiableMap(merged);
+        if (log.isDebugEnabled()) {
+            log.debug("Rebuilt keyword index from registry: {} entries", this.keywords.size());
+        }
+    }
+
+    @Override
+    public void onRegister(ServiceDescriptor descriptor) {
+        // add keywords from this descriptor
+        if (descriptor == null) return;
+        synchronized (this) {
+            Map<String, KeywordConfig> updated = new HashMap<>(this.keywords);
+            if (descriptor.keywords() != null) {
+                for (var kw : descriptor.keywords()) {
+                    if (kw != null && !kw.isBlank()) {
+                        updated.put(kw.toLowerCase(), new KeywordConfig(descriptor.id(), 1.0));
+                    }
+                }
+            }
+            this.keywords = Collections.unmodifiableMap(updated);
+        }
+        if (log.isDebugEnabled()) log.debug("Service registered '{}', updated keyword index", descriptor.id());
+    }
+
+    @Override
+    public void onDeregister(String id) {
+        if (id == null) return;
+        synchronized (this) {
+            Map<String, KeywordConfig> updated = new HashMap<>();
+            for (var e : this.keywords.entrySet()) {
+                if (!Objects.equals(e.getValue().service, id)) {
+                    updated.put(e.getKey(), e.getValue());
+                }
+            }
+            this.keywords = Collections.unmodifiableMap(updated);
+        }
+        if (log.isDebugEnabled()) log.debug("Service deregistered '{}', updated keyword index", id);
     }
 }
