@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Map;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(BuiltinAiProperties.class)
+@EnableConfigurationProperties({BuiltinAiProperties.class, LlmProperties.class})
 public class JaiRouterAutoConfiguration {
 
     @Bean
