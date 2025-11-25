@@ -6,5 +6,6 @@ dependencies {
     implementation project(':jai-router-core')
     implementation "org.springframework.boot:spring-boot-autoconfigure:${springBootAutoconfigureVersion}"
     implementation "org.springframework:spring-context:${springContextVersion}"
+    implementation "jakarta.validation:jakarta.validation-api:3.0.2"
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:${springBootConfigurationProcessorVersion}"
 }
