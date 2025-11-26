@@ -1,9 +1,6 @@
 package io.jai.router.examples;
 
 import io.jai.router.core.*;
-import io.jai.router.examples.RouteRequest;
-import io.jai.router.examples.RouteResponse;
-import io.jai.router.examples.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -16,7 +13,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.validation.FieldError;
 
 @RestControllerAdvice
 class RouterExceptionHandler extends ResponseEntityExceptionHandler {

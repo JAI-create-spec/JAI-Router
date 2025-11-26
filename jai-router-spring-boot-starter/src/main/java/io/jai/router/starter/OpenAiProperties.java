@@ -1,8 +1,11 @@
 package io.jai.router.starter;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 /**
  * OpenAI provider configuration. API key must be provided by the user when enabling OpenAI.
  */
+@ConfigurationProperties(prefix = "jai.router.openai")
 public class OpenAiProperties {
     /** The API key for OpenAI (or compatible service). */
     private String apiKey;

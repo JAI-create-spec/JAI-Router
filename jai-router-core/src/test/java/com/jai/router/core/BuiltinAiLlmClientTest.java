@@ -1,5 +1,9 @@
-package com.jai.router.core;
+package io.jai.router.core;
 
+import io.jai.router.llm.BuiltinAiLlmClient;
+import io.jai.router.core.DecisionContext;
+import io.jai.router.core.RoutingDecision;
+import io.jai.router.core.LlmClientException;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 
@@ -52,4 +56,3 @@ public class BuiltinAiLlmClientTest {
         assertThat(d1.confidence()).isEqualTo(d2.confidence());
     }
 }
-

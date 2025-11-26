@@ -1,7 +1,10 @@
-package com.jai.router.core;
+package io.jai.router.core;
 
+import io.jai.router.core.ScoringKeywordMatcher;
+import io.jai.router.core.KeywordMatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.*;
 
 import java.util.Map;
@@ -87,5 +90,22 @@ public class ScoringKeywordMatcherTest {
     void explanationIsProvided() {
         KeywordMatcher.MatchResult result = matcher.findBestMatch("encrypt data");
         assertThat(result.explanation()).isNotBlank();
+    }
+
+    @Test
+    void matchesExactKeywords() {
+        var map = Map.of("encrypt", "cryptography-service", "report", "bi-service");
+        KeywordMatcher m = new ScoringKeywordMatcher(map, "default-service", 0.5);
+        var r = m.findBestMatch("Please encrypt the data and generate a report");
+        assertThat(r.service()).isEqualTo("cryptography-service");
+        assertThat(r.confidence()).isGreaterThan(0.5);
+    }
+
+    @Test
+    void doesNotMatchPartialWords_tokenize() {
+        var map = Map.of("token", "auth-service");
+        KeywordMatcher m = new ScoringKeywordMatcher(map, "default-service", 0.4);
+        var r = m.findBestMatch("tokenize this text");
+        assertThat(r.service()).isEqualTo("default-service");
     }
 }

@@ -1,6 +1,12 @@
-package com.jai.router.core;
+package io.jai.router.core;
 
+import io.jai.router.core.DecisionContext;
+import io.jai.router.core.RoutingDecision;
+import io.jai.router.core.ScoringKeywordMatcher;
+import io.jai.router.core.KeywordMatcher;
+import io.jai.router.core.LlmClient;
 import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.*;
 
 public class DecisionContextTest {
@@ -46,4 +52,3 @@ public class DecisionContextTest {
         assertThat(ctx.payload()).isEqualTo("valid payload");
     }
 }
-
