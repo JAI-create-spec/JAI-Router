@@ -1,6 +1,6 @@
 version: "1.0"
 
-linter: jetbrains/qodana-jvm:latest
+linter: jetbrains/qodana-jvm-community:latest
 
 projectJDK: "17"
 
@@ -33,4 +33,4 @@ exclude:
       - "*/out"
 
 ide:
-  name: IntelliJ IDEA
+  name: "IntelliJ IDEA"
