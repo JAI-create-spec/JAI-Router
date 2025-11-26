@@ -42,5 +42,4 @@ failureConditions:
     any: 40
     critical: 3
 
-ide:
-  name: IntelliJ IDEA
+ide: "IntelliJ IDEA"
