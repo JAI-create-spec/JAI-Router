@@ -172,14 +172,28 @@ Configuration
 Simple `application.yml` snippet to enable the built-in provider:
 
 ```yaml
+# Example 1: Basic (Default)
 jai:
   router:
     llm:
       provider: builtin-ai
-    confidence-threshold: 0.7
+
+# Example 2: With OpenAI
+jai:
+  router:
+    llm:
+      provider: openai
+      openai-api-key: ${OPENAI_API_KEY}
+      openai-model: gpt-4o-mini
+
+# Example 3: Custom Services
+jai:
+  router:
     services:
-      - id: bi-service
-        keywords: [kpi, dashboard, report]
+      - id: payment-service
+        keywords: [payment, invoice, billing]
+        endpoint: http://localhost:8083
+        priority: HIGH
 ```
 
 Troubleshooting
