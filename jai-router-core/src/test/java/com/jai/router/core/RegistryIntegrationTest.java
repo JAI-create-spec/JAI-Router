@@ -1,8 +1,8 @@
-package com.jai.router.core;
+package io.jai.router.core;
 
-import com.jai.router.core.registry.InMemoryServiceRegistry;
-import com.jai.router.core.registry.ServiceDescriptor;
-import com.jai.router.core.registry.ServiceRegistry;
+import io.jai.router.registry.InMemoryServiceRegistry;
+import io.jai.router.registry.ServiceDescriptor;
+import io.jai.router.registry.ServiceRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -16,7 +16,7 @@ public class RegistryIntegrationTest {
     public void registerService_then_client_decides_for_keyword() {
         ServiceRegistry registry = new InMemoryServiceRegistry();
         Map<String, String> baseKeywords = Map.of("default", "default-service");
-        BuiltinAiLlmClient client = new BuiltinAiLlmClient(baseKeywords, registry);
+        io.jai.router.llm.BuiltinAiLlmClient client = new io.jai.router.llm.BuiltinAiLlmClient(baseKeywords, registry);
 
         ServiceDescriptor education = new ServiceDescriptor(
             "education-service",
@@ -27,9 +27,8 @@ public class RegistryIntegrationTest {
 
         registry.register(education);
 
-        RoutingDecision decision = client.decide(new DecisionContext("Create a lesson plan for algebra"));
+        io.jai.router.core.RoutingDecision decision = client.decide(new io.jai.router.core.DecisionContext("Create a lesson plan for algebra"));
         assertThat(decision.service()).isEqualTo("education-service");
         assertThat(decision.confidence()).isGreaterThan(0.5);
     }
 }
-
