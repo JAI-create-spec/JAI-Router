@@ -31,6 +31,3 @@ exclude:
       - ".qodana"
       - "*/build"
       - "*/out"
-
-ide:
-  name: "IntelliJ IDEA"
