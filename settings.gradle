@@ -1,2 +1,3 @@
 rootProject.name = 'jai-router'
 include 'jai-router-core', 'jai-router-spring-boot-starter', 'jai-router-examples'
+

@@ -4,6 +4,11 @@ plugins {
     id 'java'
 }
 
+bootRun {
+    mainClass.set('io.jai.router.examples.ExampleApp')
+    systemProperty 'server.port', '8085'
+}
+
 dependencies {
     implementation project(':jai-router-core')
     implementation project(':jai-router-spring-boot-starter')

@@ -1,0 +1,33 @@
+version: "1.0"
+
+linter: jetbrains/qodana-jvm-community:latest
+
+projectJDK: "17"
+
+profile:
+  name: qodana.recommended
+
+include:
+  - name: "Core"
+    paths:
+      - "jai-router-core"
+  - name: "Spring Boot autoconfigure"
+    paths:
+      - "jai-router-spring-boot-autoconfigure"
+  - name: "Spring Boot starter"
+    paths:
+      - "jai-router-spring-boot-starter"
+  - name: "Examples"
+    paths:
+      - "jai-router-examples"
+
+exclude:
+  - name: "Build and IDE output"
+    paths:
+      - ".idea"
+      - ".gradle"
+      - "build"
+      - "out"
+      - ".qodana"
+      - "*/build"
+      - "*/out"
