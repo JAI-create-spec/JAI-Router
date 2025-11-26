@@ -41,5 +41,3 @@ failureConditions:
   severityThresholds:
     any: 40
     critical: 3
-
-ide: "IntelliJ IDEA"
