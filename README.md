@@ -207,6 +207,6 @@ Contact & support
 -----------------
 If you have questions, feature requests, or want to contribute, please open an issue on GitHub or reach out by email.
 
-- GitHub repository: [jai-router](https://github.com/your-org/jai-router)
+- GitHub repository: [jai-router](https://github.com/JAI-create-spec/JAI-Router
 - Report issues: [Create an issue](https://github.com/your-org/jai-router/issues)
 - Email: [rrezart.prebreza@gmail.com](mailto:rrezart.prebreza@gmail.com)
