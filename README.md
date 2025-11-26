@@ -22,7 +22,7 @@ Quick start
 Clone and build:
 
 ```bash
-git clone https://github.com/your-org/jai-router.git
+git clone https://github.com/JAI-create-spec/JAI-Router.git
 cd jai-router
 ./gradlew clean build
 # run unit tests
@@ -221,6 +221,6 @@ Contact & support
 -----------------
 If you have questions, feature requests, or want to contribute, please open an issue on GitHub or reach out by email.
 
-- GitHub repository: [jai-router](https://github.com/JAI-create-spec/JAI-Router)
-- Report issues: [Create an issue](https://github.com/your-org/jai-router/issues)
+- GitHub repository: [jai-router](https://github.com/JAI-create-spec/JAI-Router/tree/develop)
+- Report issues: [Create an issue](https://github.com/JAI-create-spec/JAI-Router/issues)
 - Email: [rrezart.prebreza@gmail.com](mailto:rrezart.prebreza@gmail.com)
