@@ -1,49 +1,46 @@
-#-------------------------------------------------------------------------------#
-#               Qodana analysis is configured by qodana.yaml file               #
-#             https://www.jetbrains.com/help/qodana/qodana-yaml.html            #
-#-------------------------------------------------------------------------------#
-
-#################################################################################
-#              WARNING: Do not store sensitive information in this file,        #
-#               as its contents will be included in the Qodana report.          #
-#################################################################################
 version: "1.0"
 
-#Specify inspection profile for code analysis
+# Use a pinned Qodana JVM image for reproducible analysis
+linter: jetbrains/qodana-jvm:2025.2
+
+projectJDK: "17"
+
 profile:
-  name: qodana.starter
+  name: qodana.recommended
 
-#Enable inspections
-#include:
-#  - name: <SomeEnabledInspectionId>
+# Build project (without tests) before running inspections so analyzers that need class files work
+bootstrap: ./gradlew assemble -x test
 
-#Disable inspections
-#exclude:
-#  - name: <SomeDisabledInspectionId>
-#    paths:
-#      - <path/where/not/run/inspection>
+include:
+  - name: "Core"
+    paths:
+      - "jai-router-core"
+  - name: "Spring Boot autoconfigure"
+    paths:
+      - "jai-router-spring-boot-autoconfigure"
+  - name: "Spring Boot starter"
+    paths:
+      - "jai-router-spring-boot-starter"
+  - name: "Examples"
+    paths:
+      - "jai-router-examples"
 
-projectJDK: "17" #(Applied in CI/CD pipeline)
+exclude:
+  - name: "Build and IDE output"
+    paths:
+      - ".idea"
+      - ".gradle"
+      - "build"
+      - "out"
+      - ".qodana"
+      - "*/build"
+      - "*/out"
 
-#Execute shell command before Qodana execution (Applied in CI/CD pipeline)
-#bootstrap: sh ./prepare-qodana.sh
+# Basic quality gate: fail CI if thresholds exceeded (adjust to taste)
+failureConditions:
+  severityThresholds:
+    any: 40
+    critical: 3
 
-#Install IDE plugins before Qodana execution (Applied in CI/CD pipeline)
-#plugins:
-#  - id: <plugin.id> #(plugin id can be found at https://plugins.jetbrains.com)
-
-# Quality gate. Will fail the CI/CD pipeline if any condition is not met
-# severityThresholds - configures maximum thresholds for different problem severities
-# testCoverageThresholds - configures minimum code coverage on a whole project and newly added code
-# Code Coverage is available in Ultimate and Ultimate Plus plans
-#failureConditions:
-#  severityThresholds:
-#    any: 15
-#    critical: 5
-#  testCoverageThresholds:
-#    fresh: 70
-#    total: 50
-  
-#Qodana supports other languages, for example, Python, JavaScript, TypeScript, Go, C#, PHP
-#For all supported languages see https://www.jetbrains.com/help/qodana/linters.html
-linter: jetbrains/qodana-jvm-community:2025.2
+ide:
+  name: IntelliJ IDEA
