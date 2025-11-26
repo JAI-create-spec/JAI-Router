@@ -7,9 +7,12 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.jai.router.registry.ServiceRegistry;
+import io.jai.router.registry.ServiceDefinition;
+
 public class ScoringKeywordMatcher implements KeywordMatcher {
     private static final Logger log = LoggerFactory.getLogger(ScoringKeywordMatcher.class);
-    private final Map<String, KeywordConfig> keywords;
+    private Map<String, KeywordConfig> keywords;
     private final String defaultService;
     private final double defaultConfidence;
     record KeywordConfig(String service, double weight) {}
@@ -60,7 +63,31 @@ public class ScoringKeywordMatcher implements KeywordMatcher {
 
     private Map<String, KeywordConfig> buildKeywordConfigs(Map<String, String> keywordMap) {
         Map<String, KeywordConfig> configs = new HashMap<>();
-        keywordMap.forEach((keyword, service) -> configs.put(keyword, new KeywordConfig(service, 1.0)));
+        if (keywordMap != null) {
+            keywordMap.forEach((keyword, service) -> configs.put(keyword, new KeywordConfig(service, 1.0)));
+        }
         return Collections.unmodifiableMap(configs);
+    }
+
+    /**
+     * Bind to a runtime ServiceRegistry to rebuild keywords dynamically from service definitions.
+     * This is a best-effort sync: it replaces the current keyword map with one derived from the registry.
+     */
+    public void bindRegistry(ServiceRegistry registry) {
+        if (registry == null) return;
+        try {
+            List<ServiceDefinition> services = registry.listServices();
+            Map<String, String> map = new HashMap<>();
+            for (ServiceDefinition sd : services) {
+                List<String> kws = sd.keywords();
+                if (kws != null) {
+                    for (String kw : kws) map.put(kw, sd.id());
+                }
+            }
+            this.keywords = buildKeywordConfigs(map);
+            if (log.isInfoEnabled()) log.info("ScoringKeywordMatcher bound to ServiceRegistry ({} services)", services.size());
+        } catch (Exception e) {
+            log.warn("Failed to bind registry: {}", e.getMessage());
+        }
     }
 }
