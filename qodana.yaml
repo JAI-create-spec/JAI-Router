@@ -1,8 +1,5 @@
 version: "1.0"
 
-# Use a pinned Qodana JVM image for reproducible analysis
-linter: jetbrains/qodana-jvm:2025.2
-
 projectJDK: "17"
 
 profile:
