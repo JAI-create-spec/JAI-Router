@@ -88,27 +88,6 @@ jai-router/
 └── README.md
 ```
 
-Package namespace & migration
------------------------------
-The canonical package namespace is `io.jai.router`. If your sources or tests still use `com.jai.router`, update them to `io.jai.router`.
-
-Migration checklist:
-1. Replace `com.jai.router` → `io.jai.router` across source and test files.
-2. Update imports in resource files (JSON/YAML) referencing classes.
-3. Refresh IDE project settings if necessary.
-4. Rebuild: `./gradlew clean build` and fix any compilation issues.
-
-Tips & commands
----------------
-- Find occurrences of the old package quickly with:
-
-```bash
-# from repo root
-git grep -n "com.jai.router" || true
-```
-
-- Recommended IDE workflow: use IntelliJ IDEA's Refactor → Rename on the package node, then commit the changes. This keeps references and imports consistent.
-
 Build & run notes
 -----------------
 - If Gradle reports a missing project for an example (for example: "project 'simple-routing-demo' not found"), open `settings.gradle` and ensure nested example modules are included. Example include line:
