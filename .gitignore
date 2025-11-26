@@ -18,3 +18,11 @@ jai-run.log
 # Misc
 /out/
 
+# IDE and build cache
+.gradle/
+.idea/
+# Example runtime files
+jai-example-*.pid
+jai-example*.log
+*.pid
+*.log
