@@ -35,8 +35,7 @@ public class RouterHealthProbe {
                     return false;
                 }
             });
-            boolean ok = f.get(2, TimeUnit.SECONDS);
-            healthy = ok;
+            healthy = f.get(2, TimeUnit.SECONDS);
             lastChecked = Instant.now();
         } catch (Exception e) {
             healthy = false;
@@ -48,4 +47,3 @@ public class RouterHealthProbe {
     public boolean isHealthy() { return healthy; }
     public Instant getLastChecked() { return lastChecked; }
 }
-

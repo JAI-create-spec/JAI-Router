@@ -11,7 +11,6 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
-import io.github.resilience4j.retry.RetryRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 
@@ -66,7 +65,7 @@ public class OpenAiLlmClient implements LlmClient {
         RetryConfig retryConfig = RetryConfig.custom()
                 .maxAttempts(this.maxRetries + 1)
                 .intervalFunction(IntervalFunction.ofExponentialBackoff(this.retryBackoffMillis, 2.0))
-                .retryOnResult(response -> false) // we will treat based on exceptions/status
+                .retryExceptions(RetryableOpenAiException.class)
                 .failAfterMaxAttempts(true)
                 .build();
         this.retry = Retry.of("openai-retry", retryConfig);
@@ -113,47 +112,28 @@ public class OpenAiLlmClient implements LlmClient {
     }
 
     private RoutingDecision executeHttpCall(String body) throws Exception {
-        int attempt = 0;
-        while (true) {
-            attempt++;
-            try {
-                HttpRequest req = HttpRequest.newBuilder()
-                        .uri(endpoint)
-                        .header("Authorization", "Bearer " + apiKey)
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(body))
-                        .timeout(Duration.ofMillis(requestTimeoutMillis))
-                        .build();
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(endpoint)
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .timeout(Duration.ofMillis(requestTimeoutMillis))
+                .build();
 
-                HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
-                int status = resp.statusCode();
-                if (status >= 200 && status < 300) {
-                    if (registry != null) registry.counter("jai_router_llm_requests_total").increment();
-                    return parseResponse(resp.body()).orElse(defaultDecision());
-                }
-
-                // retryable statuses
-                if ((status == 429 || (status >= 500 && status < 600)) && attempt <= maxRetries) {
-                    String retryAfter = resp.headers().firstValue("Retry-After").orElse(null);
-                    long wait = retryBackoffMillis;
-                    if (retryAfter != null) {
-                        try { wait = Long.parseLong(retryAfter) * 1000L; } catch (NumberFormatException ignored) {}
-                    }
-                    Thread.sleep(wait);
-                    continue; // retry
-                }
-                // non-retryable
-                throw new RuntimeException("OpenAI request failed: " + status + " body=" + resp.body());
-
-            } catch (IOException | InterruptedException e) {
-                if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-                if (attempt <= maxRetries) {
-                    Thread.sleep(retryBackoffMillis);
-                    continue;
-                }
-                throw e;
-            }
+        HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+        int status = resp.statusCode();
+        if (status >= 200 && status < 300) {
+            if (registry != null) registry.counter("jai_router_llm_requests_total").increment();
+            return parseResponse(resp.body()).orElse(defaultDecision());
         }
+
+        // For 429 and 5xx consider retrying via Resilience4j; throw a RetryableOpenAiException to trigger retry
+        if (status == 429 || (status >= 500 && status < 600)) {
+            throw new RetryableOpenAiException("OpenAI transient error: " + status + " body=" + resp.body());
+        }
+
+        // non-retryable
+        throw new RuntimeException("OpenAI request failed: " + status + " body=" + resp.body());
     }
 
     // Package-private for unit testing
@@ -222,5 +202,12 @@ public class OpenAiLlmClient implements LlmClient {
 
     private String buildPrompt(String input) {
         return "Route the following request to the best matching service: \n\n" + input;
+    }
+
+    // Small marker exception to signal a transient error that should be retried by Resilience4j
+    private static final class RetryableOpenAiException extends IOException {
+        public RetryableOpenAiException(String message) {
+            super(message);
+        }
     }
 }
