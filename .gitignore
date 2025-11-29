@@ -1,28 +1,30 @@
 # Gradle
 .gradle/
 build/
-**/build/
 
-# Intellij
+# IDEA
 .idea/
 *.iml
 
-# Logs and runtime
-*.log
-jai.pid
-jai-run.log
-
-# OS
+# macOS
 .DS_Store
 
-# Misc
-/out/
-
-# IDE and build cache
-.gradle/
-.idea/
-# Example runtime files
-jai-example-*.pid
-jai-example*.log
-*.pid
+# Logs and runtime
 *.log
+*.pid
+
+# Eclipse
+.settings/
+.project
+.classpath
+
+# NetBeans
+nbproject/
+
+# VS Code
+.vscode/
+
+# Misc
+target/
+
+

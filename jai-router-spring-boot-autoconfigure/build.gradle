@@ -1,2 +1,26 @@
+plugins {
+    id 'java-library'
+}
 
+repositories {
+    mavenCentral()
+}
 
+dependencies {
+    implementation project(':jai-router-core')
+    implementation "org.springframework.boot:spring-boot-autoconfigure:${springBootAutoconfigureVersion}"
+    implementation "org.springframework:spring-context:${springContextVersion}"
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
+    implementation "org.springframework.boot:spring-boot-starter-actuator:${springBootVersion}"
+
+    // Resilience4j for retries and circuit breaker
+    implementation 'io.github.resilience4j:resilience4j-retry:1.7.1'
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:1.7.1'
+
+    // Use Java HttpClient (no extra dependency) but include Jackson for JSON parsing
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:${springBootConfigurationProcessorVersion}"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+}

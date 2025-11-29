@@ -8,7 +8,7 @@ public interface LlmClient {
 
     default Optional<RoutingDecision> decideNullable(DecisionContext ctx) {
         try {
-            return Optional.ofNullable(decide(ctx));
+            return Optional.of(decide(ctx));
         } catch (RuntimeException ex) {
             return Optional.empty();
         }
