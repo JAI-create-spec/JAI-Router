@@ -11,6 +11,7 @@ Highlights
 - Example application demonstrating REST endpoints and a minimal usage pattern.
 
 Repository layout
+
 ```
 jai-router/
 ├── jai-router-core/                    # Core logic (no Spring dependency)
