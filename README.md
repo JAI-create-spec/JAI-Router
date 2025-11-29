@@ -1,85 +1,20 @@
 # JAI Router
 
-Lightweight AI-assisted routing engine for Java and Spring Boot.
+A lightweight AI-assisted routing engine for Java and Spring Boot.
 
-JAI Router classifies short natural-language requests and routes them to the most appropriate microservice. It ships with an offline, explainable classifier and supports pluggable LLM providers for more advanced routing.
+JAI Router classifies short natural-language requests and routes them to the most appropriate microservice. It provides a small core (framework-agnostic), optional Spring Boot auto-configuration and starter, and example apps to help you get started quickly.
 
-Key features
-------------
-- Offline built-in classifier (no cloud required)
-- Pluggable LLM providers (OpenAI, Anthropic, local HTTP endpoints, custom)
-- Small, dependency-free core module (can be used outside Spring)
-- Spring Boot auto-configuration and starter for easy integration
-- Example applications showing common usage and REST endpoints
+Highlights
+- Small, dependency-free core module suitable for use outside of Spring.
+- Pluggable LLM provider interface and a built-in offline classifier.
+- Spring Boot autoconfigure + starter for quick integration.
+- Example application demonstrating REST endpoints and a minimal usage pattern.
 
-Requirements
-------------
-- Java 17 (or Java 11 if your toolchain requires it) — ensure JAVA_HOME is set to a compatible JDK
-- Gradle wrapper is included; use `./gradlew` (Unix/macOS: `chmod +x gradlew` if needed)
-
-Quick start
------------
-Clone and build:
-
-```bash
-git clone https://github.com/JAI-create-spec/JAI-Router.git
-cd jai-router
-./gradlew clean build
-# run unit tests
-./gradlew test
-```
-
-Run the example application (module names may vary):
-
-```bash
-# If the example is included in settings.gradle
-./gradlew :jai-router-examples:simple-routing-demo:bootRun
-
-# Or run from the example folder
-cd jai-router-examples/simple-routing-demo
-../../gradlew bootRun
-
-# To run on a different port (avoid conflicts):
-# Using Gradle (example: port 8090)
-./gradlew :jai-router-examples:simple-routing-demo:bootRun -Dserver.port=8090
-
-# Or run the built jar on a different port:
-# (build with ./gradlew :jai-router-examples:bootJar)
-java -jar jai-router-examples/build/libs/jai-router-examples-0.5.0-SNAPSHOT.jar --server.port=8090
-```
-
-Send a routing request to the example (adjust host/port as needed):
-
-```bash
-# The example accepts a JSON body matching RouteRequest: {"payload":"..."}
-curl -X POST http://localhost:8085/api/router/route \
-  -H "Content-Type: application/json" \
-  -d '{"payload":"Generate a quarterly KPI dashboard"}'
-```
-
-Expected response (example):
-
-```json
-{
-  "service": "bi-service",
-  "confidence": 0.91,
-  "explanation": "Detected keywords: quarterly, kpi, dashboard",
-  "processingTimeMs": 5,
-  "timestamp": "<ISO-8601 timestamp>",
-  "metadata": { "provider": "builtin-ai", "keywords": ["generate","quarterly","kpi","dashboard"] }
-}
-```
-
-Project layout
---------------
-This repository uses a multi-module Gradle layout. Important modules:
-
+Repository layout
 ```
 jai-router/
 ├── jai-router-core/                    # Core logic (no Spring dependency)
-│   └── src/main/java/io/jai/router/...
-├── jai-router-spring-boot-autoconfigure/ # Spring Boot auto-configuration
-│   └── src/main/java/io/jai/router/spring/...
+├── jai-router-spring-boot-autoconfigure/ # Auto-configuration for Spring Boot
 ├── jai-router-spring-boot-starter/     # Starter module (aggregates dependencies)
 ├── jai-router-examples/                # Example applications
 │   └── simple-routing-demo/
@@ -88,118 +23,107 @@ jai-router/
 └── README.md
 ```
 
-Build & run notes
------------------
-- If Gradle reports a missing project for an example (for example: "project 'simple-routing-demo' not found"), open `settings.gradle` and ensure nested example modules are included. Example include line:
-
-```gradle
-include ':jai-router-core', ':jai-router-spring-boot-autoconfigure', ':jai-router-examples:simple-routing-demo'
-```
-
-- To inspect available projects and tasks:
+Quick start (build & test)
+1. Clone the repository and run a build using the included Gradle wrapper (recommended):
 
 ```bash
-./gradlew projects
-./gradlew tasks --all
+git clone https://github.com/JAI-create-spec/JAI-Router.git
+cd JAI-Router
+# Make the wrapper executable once on macOS/Linux
+chmod +x gradlew || true
+./gradlew clean build
 ```
 
-- If your example refuses to start because the port is already in use, either run it on another port or stop the process currently listening on that port. Example commands (macOS/Linux):
+2. Run unit tests:
 
 ```bash
-# Find the process using port 8085
-lsof -nP -iTCP:8085 -sTCP:LISTEN
-# Kill the process (replace <PID> with the PID from lsof)
-kill <PID>
-# If necessary, force kill
-kill -9 <PID>
-
-# Or run the example on a different port to avoid killing processes:
-./gradlew :jai-router-examples:simple-routing-demo:bootRun -Dserver.port=8090
-# Or when running the jar:
-java -jar jai-router-examples/build/libs/jai-router-examples-0.5.0-SNAPSHOT.jar --server.port=8090
+./gradlew test
 ```
 
-Usage example (Spring Boot)
---------------------------
-Example controller showing how to use the `Router` bean (package names use `io.jai.router`):
+Run the example application
 
-```java
-package io.jai.router.examples;
+The example app is a minimal Spring Boot demo located at `jai-router-examples/simple-routing-demo`.
 
-import io.jai.router.core.Router;
-import io.jai.router.core.RoutingResult;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+From the repository root you can run:
 
-@RestController
-public class RouterController {
-
-    @Autowired
-    private Router router;
-
-    @PostMapping("/api/router/route")
-    public RoutingResult route(@RequestBody String request) {
-        return router.route(request);
-    }
-}
+```bash
+./gradlew :jai-router-examples:simple-routing-demo:bootRun
 ```
+
+Or run the built jar:
+
+```bash
+./gradlew :jai-router-examples:simple-routing-demo:bootJar
+java -jar jai-router-examples/simple-routing-demo/build/libs/*.jar --server.port=8085
+```
+
+API example
+
+Route a single request (adjust host/port if you changed them):
+
+```bash
+curl -X POST http://localhost:8085/api/router/route \
+  -H "Content-Type: application/json" \
+  -d '"Generate a quarterly KPI dashboard"'
+```
+
+The response is a `RoutingResult` JSON object describing the selected service, confidence and an explanation.
 
 Configuration
--------------
-Simple `application.yml` snippet to enable the built-in provider:
+
+The example and Spring auto-configuration read properties under the `jai.router` prefix. Example `application.yml` snippets:
 
 ```yaml
-# Example 1: Basic (Default)
+# Use built-in classifier
 jai:
   router:
     llm:
       provider: builtin-ai
+    confidence-threshold: 0.7
 
-# Example 2: With OpenAI
-jai:
-  router:
-    llm:
-      provider: openai
-      openai-api-key: ${OPENAI_API_KEY}
-      openai-model: gpt-4o-mini
-
-# Example 3: Custom Services
+# Add custom services
 jai:
   router:
     services:
       - id: payment-service
+        displayName: Payment Service
         keywords: [payment, invoice, billing]
         endpoint: http://localhost:8083
         priority: HIGH
 ```
 
-Troubleshooting
----------------
-- "RouterEngine bean not found": ensure auto-configuration is on the classpath and package `io.jai.router.spring` contains `JAIRouterAutoConfiguration`. Verify `src/main/resources/META-INF/spring.factories` or Spring Boot `spring.factories`/`spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` entries.
-- "No services registered": verify `JAIRouterAutoConfiguration` registers default services or add services in `application.yml`.
-- Build failures: run with `--stacktrace` to get the detailed cause:
+IDE import (IntelliJ, Eclipse, NetBeans, VS Code)
 
-```bash
-./gradlew clean build --stacktrace
-```
+This project is a standard Gradle multi-module build and can be imported into major Java IDEs. Use the Gradle wrapper when importing.
+
+- IntelliJ IDEA: Open the repository root, import as a Gradle project, and select "Use Gradle wrapper". The Gradle tool window lists modules and tasks (e.g. `:jai-router-examples:simple-routing-demo:bootRun`).
+- Eclipse (Buildship): File → Import → Gradle → Existing Gradle Project → choose project root and use the Gradle wrapper.
+- NetBeans: File → Open Project → select repository root; NetBeans recognizes Gradle projects.
+- VS Code: Install Java Extension Pack and Gradle extensions, then open the folder and import the Gradle project. Use the Gradle tasks view or CLI to run `bootRun`.
+
+Prerequisites
+- Java 17+ (required for Spring Boot 3.x features used by the example). Ensure `JAVA_HOME` points to a compatible JDK.
+- Gradle wrapper is included; prefer `./gradlew` so contributors use a consistent Gradle version.
+
+Development notes
+- Core (`jai-router-core`) is intentionally framework-agnostic. It performs basic validation and offers an LLM provider interface for custom routing strategies.
+- The example uses constructor injection and `ObjectProvider<Router>` so the example runs even when auto-configuration is not present.
 
 Contributing
-------------
-Contributions are welcome. Please open issues or pull requests. When contributing:
-- Add tests for new functionality
-- Keep changes focused and documented
-- Run `./gradlew clean build` locally before submitting a PR
+- Please open issues or pull requests on GitHub. When contributing:
+  - Add or update unit tests for new behavior.
+  - Keep changes focused and documented.
+  - Run `./gradlew clean build` before submitting a PR.
+
+CI and code quality
+- This repository can be scanned by Qodana / other linters; review CI workflow files under `.github/workflows` and `qodana.yaml` if you add/adjust checks.
 
 License
--------
-This project is licensed under the MIT License — see the `LICENSE` file for details.
+- MIT — see `LICENSE` for details.
 
 Contact & support
------------------
-If you have questions, feature requests, or want to contribute, please open an issue on GitHub or reach out by email.
+- Repository: https://github.com/JAI-create-spec/JAI-Router/tree/develop
+- Issues: https://github.com/JAI-create-spec/JAI-Router/issues
+- Email: rrezart.prebreza@gmail.com
 
-- GitHub repository: [jai-router](https://github.com/JAI-create-spec/JAI-Router/tree/develop)
-- Report issues: [Create an issue](https://github.com/JAI-create-spec/JAI-Router/issues)
-- Email: [rrezart.prebreza@gmail.com](mailto:rrezart.prebreza@gmail.com)
+Thank you for using JAI Router — contributions and feedback are welcome.
