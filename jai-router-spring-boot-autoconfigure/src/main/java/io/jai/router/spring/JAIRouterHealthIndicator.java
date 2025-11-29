@@ -1,4 +1,3 @@
-
 package io.jai.router.spring;
 
 import io.jai.router.core.LlmClient;
@@ -9,22 +8,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class JAIRouterHealthIndicator implements HealthIndicator {
 
-    private final LlmClient client;
+    private final RouterHealthProbe probe;
 
-    public JAIRouterHealthIndicator(LlmClient client) {
-        this.client = client;
+    public JAIRouterHealthIndicator(RouterHealthProbe probe) {
+        this.probe = probe;
     }
 
     @Override
     public Health health() {
-        try {
-            // Basic check: call decideNullable with a short payload
-            var opt = client.decideNullable(io.jai.router.core.DecisionContext.of("health check"));
-            return opt.isPresent() ? Health.up().withDetail("provider", "available").build()
-                                     : Health.down().withDetail("provider", "no-decision").build();
-        } catch (Exception e) {
-            return Health.down(e).build();
+        if (probe == null) {
+            return Health.down().withDetail("provider", "none").build();
         }
+        boolean ok = probe.isHealthy();
+        return ok ? Health.up().withDetail("provider", "available").withDetail("lastChecked", probe.getLastChecked()).build()
+                  : Health.down().withDetail("provider", "no-decision").withDetail("lastChecked", probe.getLastChecked()).build();
     }
 }
-

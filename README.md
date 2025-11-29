@@ -93,6 +93,28 @@ jai:
         priority: HIGH
 ```
 
+OpenAI provider (optional)
+
+The project includes an optional OpenAI provider in the autoconfigure module. To enable it set `jai.router.llm.provider` to `openai` and provide an API key via environment variable or configuration.
+
+```yaml
+jai:
+  router:
+    llm:
+      provider: openai
+      # openai-specific configuration
+      openai:
+        api-key: ${OPENAI_API_KEY}    # set in env or CI secrets
+        model: gpt-4o-mini
+        temperature: 0.0
+```
+
+Notes:
+- The autoconfiguration will create an OpenAI-backed `LlmClient` when `jai.router.llm.provider=openai` and a non-empty `jai.router.openai.api-key` is present.
+- For predictable parsing and safety the client instructs the model to return machine-parseable JSON; however, you should always validate responses and provide fallbacks.
+- Do NOT commit API keys into source code. Use environment variables, CI secrets, or a secrets manager in production.
+- Prefer `temperature: 0.0` for deterministic routing decisions.
+
 IDE import (IntelliJ, Eclipse, NetBeans, VS Code)
 
 This project is a standard Gradle multi-module build and can be imported into major Java IDEs. Use the Gradle wrapper when importing.
