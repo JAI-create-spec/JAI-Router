@@ -13,6 +13,9 @@ import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -26,7 +29,72 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
+/**
+ * OpenAI-powered LLM client for intelligent routing using GPT models.
+ * <p>
+ * <strong>PAID SERVICE - Requires OpenAI API Key and incurs costs</strong>
+ * </p>
+ *
+ * <p><strong>Features:</strong></p>
+ * <ul>
+ *   <li>AI-powered routing with natural language understanding</li>
+ *   <li>Circuit breaker pattern for fault tolerance</li>
+ *   <li>Automatic retry with exponential backoff</li>
+ *   <li>Metrics integration with Micrometer</li>
+ *   <li>Configurable timeout and retry settings</li>
+ * </ul>
+ *
+ * <p><strong>Requirements:</strong></p>
+ * <ul>
+ *   <li>OpenAI API key (get from https://platform.openai.com)</li>
+ *   <li>API costs apply per request</li>
+ *   <li>Internet connectivity required</li>
+ * </ul>
+ *
+ * <p><strong>Configuration Example:</strong></p>
+ * <pre>
+ * jai:
+ *   router:
+ *     llm-provider: openai
+ *     openai:
+ *       api-key: ${OPENAI_API_KEY}
+ *       model: gpt-4o-mini
+ *       temperature: 0.0
+ *       max-retries: 2
+ *       timeout-seconds: 30
+ * </pre>
+ *
+ * <p><strong>Usage Example:</strong></p>
+ * <pre>
+ * MeterRegistry metrics = ...;
+ * LlmClient client = new OpenAiLlmClient(
+ *     "sk-your-api-key",
+ *     "gpt-4o-mini",
+ *     0.0,        // temperature
+ *     2,          // max retries
+ *     30000,      // timeout ms
+ *     500,        // retry backoff ms
+ *     metrics
+ * );
+ * RoutingDecision decision = client.decide(DecisionContext.of("user wants to login"));
+ * </pre>
+ *
+ * <p><strong>Cost Considerations:</strong></p>
+ * <ul>
+ *   <li>Each routing decision makes 1 API call to OpenAI</li>
+ *   <li>Costs depend on model chosen (gpt-4o-mini is cheapest)</li>
+ *   <li>Failed requests are retried (may incur additional costs)</li>
+ *   <li>Consider using BuiltinAiLlmClient for free alternative</li>
+ * </ul>
+ *
+ * @author JAI Router Team
+ * @since 0.5.0
+ * @see LlmClient
+ * @see io.jai.router.llm.BuiltinAiLlmClient
+ */
 public class OpenAiLlmClient implements LlmClient {
+
+    private static final Logger log = LoggerFactory.getLogger(OpenAiLlmClient.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final HttpClient http;
     private final String apiKey;
@@ -45,11 +113,38 @@ public class OpenAiLlmClient implements LlmClient {
     private final Timer requestTimer;
     private final MeterRegistry registry;
 
-    public OpenAiLlmClient(String apiKey, String model, double temperature) {
+    /**
+     * Creates OpenAI client with default settings.
+     *
+     * @param apiKey      OpenAI API key (required), must not be null
+     * @param model       GPT model name (e.g., "gpt-4o-mini")
+     * @param temperature generation temperature (0.0-2.0, lower is more deterministic)
+     */
+    public OpenAiLlmClient(@NotNull String apiKey, String model, double temperature) {
         this(apiKey, model, temperature, 2, 30000, 500, null);
     }
 
-    public OpenAiLlmClient(String apiKey, String model, double temperature, int maxRetries, int timeoutMillis, int retryBackoffMillis, MeterRegistry registry) {
+    /**
+     * Creates OpenAI client with full configuration.
+     *
+     * @param apiKey              OpenAI API key (required), must not be null
+     * @param model               GPT model name (e.g., "gpt-4o-mini")
+     * @param temperature         generation temperature (0.0-2.0)
+     * @param maxRetries          maximum retry attempts for failed requests
+     * @param timeoutMillis       request timeout in milliseconds
+     * @param retryBackoffMillis  initial retry backoff delay in milliseconds
+     * @param registry            optional Micrometer registry for metrics
+     * @throws NullPointerException if apiKey is null
+     */
+    public OpenAiLlmClient(
+            @NotNull String apiKey,
+            String model,
+            double temperature,
+            int maxRetries,
+            int timeoutMillis,
+            int retryBackoffMillis,
+            MeterRegistry registry
+    ) {
         this.apiKey = Objects.requireNonNull(apiKey, "OpenAI apiKey is required");
         this.model = model == null ? "gpt-4o-mini" : model;
         this.temperature = temperature;
@@ -79,10 +174,31 @@ public class OpenAiLlmClient implements LlmClient {
 
         this.registry = registry;
         this.requestTimer = registry != null ? Timer.builder("jai_router_llm_request_latency_ms").publishPercentiles(0.5, 0.95).register(registry) : null;
+
+        log.info("OpenAiLlmClient initialized with model: {}, maxRetries: {}, timeout: {}ms",
+                this.model, this.maxRetries, this.requestTimeoutMillis);
     }
 
+    /**
+     * Makes an AI-powered routing decision using OpenAI's GPT model.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Sends the input to OpenAI API</li>
+     *   <li>Applies circuit breaker pattern for fault tolerance</li>
+     *   <li>Automatically retries on transient failures</li>
+     *   <li>Records metrics if MeterRegistry is configured</li>
+     * </ul>
+     * </p>
+     *
+     * @param ctx the decision context containing the input text
+     * @return routing decision with service, confidence, and explanation
+     * @throws NullPointerException if ctx is null
+     * @throws RuntimeException     if API call fails after all retries
+     */
     @Override
-    public RoutingDecision decide(DecisionContext ctx) {
+    @NotNull
+    public RoutingDecision decide(@NotNull DecisionContext ctx) {
         Objects.requireNonNull(ctx, "DecisionContext is required");
         String prompt = buildPrompt(ctx.payload());
         String body;
@@ -109,6 +225,17 @@ public class OpenAiLlmClient implements LlmClient {
             if (registry != null) registry.counter("jai_router_llm_failures_total").increment();
             throw new RuntimeException("OpenAI call failed", e);
         }
+    }
+
+    /**
+     * Returns the name of this LLM client implementation.
+     *
+     * @return "OpenAiLlmClient"
+     */
+    @Override
+    @NotNull
+    public String getName() {
+        return "OpenAiLlmClient (model: " + model + ")";
     }
 
     private RoutingDecision executeHttpCall(String body) throws Exception {
@@ -180,11 +307,6 @@ public class OpenAiLlmClient implements LlmClient {
         }
     }
 
-    private double clamp(double v) {
-        if (v < 0) return 0.0;
-        if (v > 1) return 1.0;
-        return v;
-    }
 
     private RoutingDecision defaultDecision() {
         return RoutingDecision.of("none", 0.0, "openai-failed");

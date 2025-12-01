@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,13 +26,15 @@ import java.time.Duration;
 public class OpenAiLlmClient implements LlmClient {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiLlmClient.class);
+    private static final String DEFAULT_SERVICE = "default-service";
+    private static final double DEFAULT_CONFIDENCE = 0.5;
+    private static final int SUCCESS_STATUS_CODE = 2;
 
     private final OpenAiProperties props;
     private final LlmProperties llmProps;
     private final HttpClient httpClient;
-    private final ObjectMapper mapper = new ObjectMapper();
 
-    public OpenAiLlmClient(OpenAiProperties props, LlmProperties llmProps) {
+    public OpenAiLlmClient(@NotNull OpenAiProperties props, LlmProperties llmProps) {
         this.props = props;
         this.llmProps = llmProps;
         this.httpClient = HttpClient.newBuilder()
@@ -40,7 +43,8 @@ public class OpenAiLlmClient implements LlmClient {
     }
 
     @Override
-    public RoutingDecision decide(DecisionContext ctx) {
+    @NotNull
+    public RoutingDecision decide(@NotNull DecisionContext ctx) {
         if (ctx == null) {
             throw new LlmClientException("DecisionContext must not be null");
         }
@@ -52,6 +56,7 @@ public class OpenAiLlmClient implements LlmClient {
         URI uri = URI.create(props.getEndpoint().replaceAll("/+$", "") + "/chat/completions");
 
         try {
+            ObjectMapper mapper = new ObjectMapper();
             ObjectNode root = mapper.createObjectNode();
             root.put("model", model);
 
@@ -79,12 +84,12 @@ public class OpenAiLlmClient implements LlmClient {
                 .build();
 
             HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() / 100 != 2) {
+            if (resp.statusCode() / 100 != SUCCESS_STATUS_CODE) {
                 throw new LlmClientException("OpenAI request failed: " + resp.statusCode() + " " + resp.body());
             }
 
             JsonNode respRoot = mapper.readTree(resp.body());
-            JsonNode choice = respRoot.path("choices").isArray() && respRoot.path("choices").size() > 0
+            JsonNode choice = respRoot.path("choices").isArray() && !respRoot.path("choices").isEmpty()
                 ? respRoot.path("choices").get(0)
                 : null;
 
@@ -94,7 +99,6 @@ public class OpenAiLlmClient implements LlmClient {
             }
 
             if (assistantText == null) {
-                // Fallback: try top-level text or entire response
                 assistantText = resp.body();
             }
 
@@ -103,20 +107,18 @@ public class OpenAiLlmClient implements LlmClient {
             // Try parsing assistantText as JSON
             try {
                 JsonNode decisionNode = mapper.readTree(assistantText);
-                String service = decisionNode.path("service").asText("default-service");
-                double confidence = decisionNode.path("confidence").asDouble(0.5);
+                String service = decisionNode.path("service").asText(DEFAULT_SERVICE);
+                double confidence = decisionNode.path("confidence").asDouble(DEFAULT_CONFIDENCE);
                 String explanation = decisionNode.path("explanation").asText("");
-                return io.jai.router.core.RoutingDecision.of(service, confidence, explanation);
+                return RoutingDecision.of(service, confidence, explanation);
             } catch (Exception e) {
-                // Non-JSON reply: log and fall back
                 log.warn("OpenAI returned non-JSON reply; falling back to heuristic parsing: {}", assistantText);
-                // rudimentary heuristic: default service and confidence
-                return io.jai.router.core.RoutingDecision.of("default-service", 0.5, assistantText);
+                return RoutingDecision.of(DEFAULT_SERVICE, DEFAULT_CONFIDENCE, assistantText);
             }
         } catch (LlmClientException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new io.jai.router.core.LlmClientException("OpenAI client error", ex);
+            throw new LlmClientException("OpenAI client error", ex);
         }
     }
 }

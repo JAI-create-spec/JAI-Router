@@ -4,6 +4,8 @@ import io.jai.router.core.Router;
 import io.jai.router.core.RoutingResult;
 import io.jai.router.core.exception.InvalidInputException;
 import io.jai.router.core.validation.RoutingInputValidator;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -24,13 +26,15 @@ public class RouterController {
     private final Router router;
     private final RoutingInputValidator validator;
 
-    public RouterController(ObjectProvider<Router> routerProvider, ObjectProvider<RoutingInputValidator> validatorProvider) {
+    public RouterController(@NotNull ObjectProvider<Router> routerProvider,
+                           @NotNull ObjectProvider<RoutingInputValidator> validatorProvider) {
         this.router = routerProvider.getIfAvailable();
         this.validator = validatorProvider.getIfAvailable(RoutingInputValidator::new);
     }
 
     @PostMapping(path = "/api/router/route", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> route(@RequestBody Object requestBody) {
+    @NotNull
+    public ResponseEntity<?> route(@NotNull @RequestBody Object requestBody) {
         long start = System.currentTimeMillis();
 
         String payload = extractPayload(requestBody);
@@ -59,17 +63,18 @@ public class RouterController {
         }
     }
 
-    private String extractPayload(Object requestBody) {
-        if (requestBody == null) return null;
+    @Nullable
+    private String extractPayload(@NotNull Object requestBody) {
         if (requestBody instanceof String) {
             return (String) requestBody;
         }
         if (requestBody instanceof Map) {
             Object payload = ((Map<?, ?>) requestBody).get("payload");
-            if (payload instanceof String) return (String) payload;
+            if (payload instanceof String) {
+                return (String) payload;
+            }
             return payload == null ? null : payload.toString();
         }
-        // fallback to toString()
         return requestBody.toString();
     }
 }
