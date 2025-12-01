@@ -1,6 +1,7 @@
 package io.jai.router.examples;
 
 import io.jai.router.core.*;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -33,10 +34,11 @@ class RouterExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
-                                                                  HttpHeaders headers,
-                                                                  org.springframework.http.HttpStatusCode status,
-                                                                  WebRequest request) {
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            @NotNull MethodArgumentNotValidException ex,
+            @NotNull HttpHeaders headers,
+            @NotNull org.springframework.http.HttpStatusCode status,
+            @NotNull WebRequest request) {
         String message = ex.getBindingResult().getFieldErrors().stream()
             .findFirst()
             .map(org.springframework.validation.FieldError::getDefaultMessage)

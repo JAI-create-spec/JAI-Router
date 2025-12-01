@@ -499,6 +499,6 @@ try {
 
 For questions or issues:
 - **Email**: rrezart.prebreza@gmail.com
-- **GitHub Issues**: https://github.com/JAI-create-spec/JAI-Router/issues
-- **Discussions**: https://github.com/JAI-create-spec/JAI-Router/discussions
+- **GitHub Issues**: [JAI-Router Issues](https://github.com/JAI-create-spec/JAI-Router/issues)
+- **Discussions**: [JAI-Router Discussions](https://github.com/JAI-create-spec/JAI-Router/discussions)
 
