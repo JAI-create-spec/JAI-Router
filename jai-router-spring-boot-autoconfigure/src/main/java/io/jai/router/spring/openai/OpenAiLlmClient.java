@@ -307,11 +307,6 @@ public class OpenAiLlmClient implements LlmClient {
         }
     }
 
-    private double clamp(double v) {
-        if (v < 0) return 0.0;
-        if (v > 1) return 1.0;
-        return v;
-    }
 
     private RoutingDecision defaultDecision() {
         return RoutingDecision.of("none", 0.0, "openai-failed");
