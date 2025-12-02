@@ -27,4 +27,9 @@ nbproject/
 # Misc
 target/
 
+# Publishing (local reference only)
+MAVEN_CENTRAL_PUBLISHING.md
+PUBLICATION_READY.md
+gradle.properties
+
 
