@@ -181,34 +181,66 @@ jai-router/
 
 ## Installation
 
-### Option 1: Maven Central (Recommended)
+### Option 1: Build From Source (Recommended)
 
-```xml
-<!-- In your pom.xml -->
-<dependency>
-    <groupId>io.jai</groupId>
-    <artifactId>jai-router-spring-boot-starter</artifactId>
-    <version>0.5.0</version>
-</dependency>
-```
-
-### Option 2: Gradle
-
-```gradle
-implementation 'io.jai:jai-router-spring-boot-starter:0.5.0'
-```
-
-### Option 3: Build From Source
+Clone and build the library locally:
 
 ```bash
 git clone https://github.com/JAI-create-spec/JAI-Router.git
 cd JAI-Router
-./gradlew clean build publishToMavenLocal
 
-# Then use in your project:
-# Maven: add to ~/.m2/repository
-# Gradle: automatically available via mavenLocal()
+# Make wrapper executable
+chmod +x gradlew
+
+# Build all modules
+./gradlew clean build
+
+# Install to local Maven repository
+./gradlew publishToMavenLocal
 ```
+
+### Option 2: Use in Your Local Project
+
+After building and publishing to local Maven repository, add to your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>io.jai</groupId>
+    <artifactId>jai-router-spring-boot-starter</artifactId>
+    <version>0.5.0-SNAPSHOT</version>
+</dependency>
+```
+
+Or in `build.gradle`:
+
+```gradle
+repositories {
+    mavenLocal()  // Add this to use local Maven repository
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'io.jai:jai-router-spring-boot-starter:0.5.0-SNAPSHOT'
+}
+```
+
+### Option 3: Use as Git Submodule
+
+Add JAI Router as a Git submodule in your project:
+
+```bash
+git submodule add https://github.com/JAI-create-spec/JAI-Router.git jai-router
+```
+
+Then include in your `settings.gradle`:
+
+```groovy
+includeBuild 'jai-router'
+```
+
+### Coming Soon: Maven Central
+
+JAI Router will be published to Maven Central Repository soon. Once published, you'll be able to use it directly without building from source. See [PUBLISHING.md](PUBLISHING.md) for publishing details.
 
 ---
 
@@ -753,6 +785,8 @@ java -version    # Should be 17 or higher
 - 🤝 **[Contributing Guidelines](CONTRIBUTING.md)** — How to contribute
 - 📝 **[Changelog](CHANGELOG.md)** — Release history
 - 📄 **[License](LICENSE)** — MIT License
+- 🚀 **[Publishing Guide](PUBLISHING.md)** — Publish to Maven Central (detailed)
+- ⚡ **[Publishing Quick Start](PUBLISH_QUICK_START.md)** — Quick reference for publishing
 
 ---
 
