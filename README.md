@@ -214,65 +214,319 @@ cd JAI-Router
 
 ## Usage
 
-### Basic Configuration (Spring Boot)
+### Example 1: Built-in AI Provider (No External API Needed)
+
+**Setup:** Perfect for getting started quickly without external dependencies.
 
 **application.yml:**
 
 ```yaml
 jai:
   router:
-    # LLM Provider configuration
+    # Use built-in keyword-based AI (fastest, no API calls)
     llm:
-      provider: builtin-ai              # or: openai, anthropic
-      openai-api-key: ${OPENAI_API_KEY}
+      provider: builtin-ai
       
-    # Routing thresholds
-    confidence-threshold: 0.7
+    # Routing confidence threshold
+    confidence-threshold: 0.65
     
-    # Service definitions
+    # Define your microservices
     services:
       - id: payment-service
         displayName: "Payment Service"
-        keywords: [payment, invoice, charge, billing, transaction]
+        keywords: 
+          - payment
+          - invoice
+          - charge
+          - billing
+          - transaction
+          - card
+          - refund
         endpoint: http://localhost:8083
         priority: HIGH
         
       - id: analytics-service
-        displayName: "Analytics & BI"
-        keywords: [report, dashboard, analytics, metrics, kpi]
+        displayName: "Analytics & BI Service"
+        keywords:
+          - report
+          - dashboard
+          - analytics
+          - metrics
+          - kpi
+          - chart
+          - visualization
         endpoint: http://localhost:8084
         priority: MEDIUM
         
       - id: auth-service
-        displayName: "Authentication"
-        keywords: [login, auth, verify, token, security]
+        displayName: "Authentication Service"
+        keywords:
+          - login
+          - authenticate
+          - verify
+          - token
+          - security
+          - permission
+          - access
         endpoint: http://localhost:8082
         priority: HIGH
 ```
 
-### Basic Usage (Spring Boot Controller)
+**Controller Example:**
 
 ```java
-import io.jai.router.core.Router;
-import io.jai.router.core.RoutingResult;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
 @RestController
-@RequestMapping("/api")
-public class MyRouter {
+@RequestMapping("/api/router")
+public class BuiltInAIRouter {
     
     @Autowired
     private Router router;
     
     @PostMapping("/route")
-    public RoutingResult route(@RequestBody String request) {
-        return router.route(request);
+    public ResponseEntity<RoutingResult> routeRequest(@RequestBody String request) {
+        RoutingResult result = router.route(request);
+        
+        if (result.getConfidence() < 0.65) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(result);
+        }
+        
+        return ResponseEntity.ok(result);
     }
 }
 ```
 
-### Advanced: Using Core Library (No Spring)
+**Test It:**
+
+```bash
+curl -X POST http://localhost:8085/api/router/route \
+  -H "Content-Type: application/json" \
+  -d '"Process a refund of $50"'
+
+# Response:
+# {
+#   "service": "payment-service",
+#   "confidence": 0.92,
+#   "explanation": "Matched keywords: process, refund, $50",
+#   "processingTimeMs": 8
+# }
+```
+
+---
+
+### Example 2: OpenAI Provider (GPT-Powered, More Accurate)
+
+**Setup:** Use GPT-4 for intelligent semantic understanding. Requires OpenAI API key.
+
+**Prerequisites:**
+
+```bash
+# Set your OpenAI API key as environment variable
+export OPENAI_API_KEY="sk-proj-..."
+
+# Or in your CI/CD secrets
+```
+
+**application.yml:**
+
+```yaml
+jai:
+  router:
+    # Use OpenAI GPT for advanced routing
+    llm:
+      provider: openai
+      openai-api-key: ${OPENAI_API_KEY}
+      
+    # Routing confidence threshold (higher for external API)
+    confidence-threshold: 0.75
+    
+    # Define your microservices
+    services:
+      - id: payment-service
+        displayName: "Payment Processing"
+        keywords:
+          - payment
+          - transaction
+          - billing
+          - invoice
+          - charge
+          - refund
+          - card
+          - wallet
+          - subscription
+        endpoint: http://localhost:8083
+        priority: CRITICAL
+        
+      - id: analytics-service
+        displayName: "Business Intelligence"
+        keywords:
+          - analytics
+          - report
+          - dashboard
+          - metrics
+          - insights
+          - data
+          - performance
+          - kpi
+          - trend
+        endpoint: http://localhost:8084
+        priority: HIGH
+        
+      - id: auth-service
+        displayName: "Identity & Security"
+        keywords:
+          - authentication
+          - authorization
+          - login
+          - verify
+          - security
+          - token
+          - permission
+          - access
+          - credential
+        endpoint: http://localhost:8082
+        priority: CRITICAL
+        
+      - id: notification-service
+        displayName: "Notifications"
+        keywords:
+          - email
+          - sms
+          - notification
+          - alert
+          - message
+          - push
+          - send
+        endpoint: http://localhost:8086
+        priority: MEDIUM
+```
+
+**Controller with Error Handling:**
+
+```java
+@RestController
+@RequestMapping("/api/router")
+public class OpenAIRouter {
+    
+    @Autowired
+    private Router router;
+    
+    @Autowired
+    private RestTemplate restTemplate;
+    
+    @PostMapping("/route-with-fallback")
+    public ResponseEntity<?> routeWithFallback(@RequestBody String request) {
+        try {
+            RoutingResult result = router.route(request);
+            
+            // Log routing decision for monitoring
+            logger.info("Routed to: {} with confidence: {}", 
+                result.getService(), result.getConfidence());
+            
+            // Forward request to appropriate service
+            return forwardToService(result);
+            
+        } catch (Exception e) {
+            logger.error("Routing failed", e);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of("error", "Routing service unavailable"));
+        }
+    }
+    
+    private ResponseEntity<?> forwardToService(RoutingResult result) {
+        try {
+            String endpoint = result.getEndpoint();
+            // Forward request to the determined service
+            return restTemplate.postForEntity(endpoint, null, String.class);
+        } catch (Exception e) {
+            logger.error("Service forwarding failed", e);
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
+        }
+    }
+}
+```
+
+**Test It:**
+
+```bash
+# This will use GPT to understand the request semantically
+curl -X POST http://localhost:8085/api/router/route-with-fallback \
+  -H "Content-Type: application/json" \
+  -d '"Can you help me recover my account access?"'
+
+# Response (GPT-powered, more intelligent):
+# {
+#   "service": "auth-service",
+#   "confidence": 0.96,
+#   "explanation": "Request semantically matches account recovery/access control",
+#   "processingTimeMs": 145
+# }
+```
+
+---
+
+### Example 3: Spring Boot Controller (Complete Implementation)
+
+```java
+import io.jai.router.core.Router;
+import io.jai.router.core.RoutingResult;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/router")
+public class RouterController {
+    
+    @Autowired
+    private Router router;
+    
+    /**
+     * Route a single request to the appropriate service
+     */
+    @PostMapping("/route")
+    public ResponseEntity<RoutingResult> route(@RequestBody String request) {
+        if (request == null || request.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        RoutingResult result = router.route(request);
+        return ResponseEntity.ok(result);
+    }
+    
+    /**
+     * Route multiple requests (batch processing)
+     */
+    @PostMapping("/batch")
+    public ResponseEntity<Map<String, RoutingResult>> routeBatch(
+            @RequestBody List<String> requests) {
+        
+        Map<String, RoutingResult> results = new HashMap<>();
+        for (String request : requests) {
+            results.put(request, router.route(request));
+        }
+        
+        return ResponseEntity.ok(results);
+    }
+    
+    /**
+     * Health check endpoint
+     */
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health() {
+        return ResponseEntity.ok(Map.of(
+            "status", "UP",
+            "service", "JAI Router"
+        ));
+    }
+}
+```
+
+---
+
+### Example 4: Using Core Library (No Spring Required)
 
 ```java
 import io.jai.router.core.Router;
@@ -280,25 +534,55 @@ import io.jai.router.core.RouterEngine;
 import io.jai.router.llm.BuiltInAIProvider;
 import io.jai.router.registry.InMemoryServiceRegistry;
 import io.jai.router.registry.ServiceDefinition;
+import java.util.Arrays;
 
-// Create registry and define services
-InMemoryServiceRegistry registry = new InMemoryServiceRegistry();
-registry.register(
-    ServiceDefinition.builder()
-        .id("payment-service")
-        .keywords(Arrays.asList("payment", "invoice", "billing"))
-        .build()
-);
-
-// Create router with built-in AI
-Router router = new RouterEngine(
-    new BuiltInAIProvider(),
-    registry
-);
-
-// Use it!
-RoutingResult result = router.route("Process my payment");
-System.out.println("Routed to: " + result.getService());
+public class StandaloneRouter {
+    
+    public static void main(String[] args) {
+        // 1. Create service registry
+        InMemoryServiceRegistry registry = new InMemoryServiceRegistry();
+        
+        // 2. Register services
+        registry.register(
+            ServiceDefinition.builder()
+                .id("payment-service")
+                .displayName("Payment Service")
+                .keywords(Arrays.asList("payment", "invoice", "billing", "charge"))
+                .endpoint("http://localhost:8083")
+                .build()
+        );
+        
+        registry.register(
+            ServiceDefinition.builder()
+                .id("analytics-service")
+                .displayName("Analytics Service")
+                .keywords(Arrays.asList("report", "dashboard", "analytics", "metrics"))
+                .endpoint("http://localhost:8084")
+                .build()
+        );
+        
+        // 3. Create router with built-in AI
+        Router router = new RouterEngine(
+            new BuiltInAIProvider(),
+            registry
+        );
+        
+        // 4. Route requests
+        String[] requests = {
+            "Process my payment",
+            "Generate quarterly report",
+            "Show me the dashboard"
+        };
+        
+        for (String request : requests) {
+            RoutingResult result = router.route(request);
+            System.out.println("Request: " + request);
+            System.out.println("Routed to: " + result.getService());
+            System.out.println("Confidence: " + result.getConfidence());
+            System.out.println("---");
+        }
+    }
+}
 ```
 
 ---
