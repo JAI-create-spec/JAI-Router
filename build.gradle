@@ -5,7 +5,7 @@ plugins {
 
 allprojects {
     group = 'io.jai.router'
-    version = '0.5.0-SNAPSHOT'
+    version = '0.5.0'
 
     ext {
         springBootVersion = '3.2.0'
@@ -20,64 +20,78 @@ allprojects {
     }
 }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
+// Configure publishing for library modules (not examples)
+configure([
+    project(':jai-router-core'),
+    project(':jai-router-spring-boot-autoconfigure'),
+    project(':jai-router-spring-boot-starter')
+]) {
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
 
-            pom {
-                name = 'JAI Router'
-                description = 'Intelligent AI-powered microservice routing engine for Java and Spring Boot'
-                url = 'https://github.com/JAI-create-spec/JAI-Router'
-
-                licenses {
-                    license {
-                        name = 'MIT License'
-                        url = 'https://opensource.org/licenses/MIT'
-                    }
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                if (plugins.hasPlugin('java-library')) {
+                    from components.java
+                } else if (plugins.hasPlugin('java')) {
+                    from components.java
                 }
 
-                developers {
-                    developer {
-                        id = 'rrezart'
-                        name = 'Rrezart Prebreza'
-                        email = 'rrezart.prebreza@gmail.com'
-                    }
-                }
-
-                scm {
-                    connection = 'scm:git:https://github.com/JAI-create-spec/JAI-Router.git'
-                    developerConnection = 'scm:git:https://github.com/JAI-create-spec/JAI-Router.git'
+                pom {
+                    name = 'JAI Router - ' + project.name
+                    description = 'Intelligent AI-powered microservice routing engine for Java and Spring Boot'
                     url = 'https://github.com/JAI-create-spec/JAI-Router'
+
+                    licenses {
+                        license {
+                            name = 'MIT License'
+                            url = 'https://opensource.org/licenses/MIT'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id = 'rrezart'
+                            name = 'Rrezart Prebreza'
+                            email = 'rrezart.prebreza@gmail.com'
+                        }
+                    }
+
+                    scm {
+                        connection = 'scm:git:https://github.com/JAI-create-spec/JAI-Router.git'
+                        developerConnection = 'scm:git:https://github.com/JAI-create-spec/JAI-Router.git'
+                        url = 'https://github.com/JAI-create-spec/JAI-Router'
+                    }
+                }
+            }
+        }
+
+        repositories {
+            maven {
+                name = 'sonatype'
+                url = version.endsWith('SNAPSHOT') ?
+                    'https://oss.sonatype.org/content/repositories/snapshots/' :
+                    'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+                credentials {
+                    username = project.findProperty('ossrhUsername') ?: System.getenv('OSSRH_USERNAME')
+                    password = project.findProperty('ossrhPassword') ?: System.getenv('OSSRH_PASSWORD')
+                }
+            }
+            maven {
+                name = 'github'
+                url = uri('https://maven.pkg.github.com/JAI-create-spec/JAI-Router')
+                credentials {
+                    username = System.getenv('GITHUB_ACTOR') ?: project.findProperty('gpr.user')
+                    password = System.getenv('GITHUB_TOKEN') ?: project.findProperty('gpr.key')
                 }
             }
         }
     }
 
-    repositories {
-        maven {
-            name = 'sonatype'
-            url = version.endsWith('SNAPSHOT') ?
-                'https://oss.sonatype.org/content/repositories/snapshots/' :
-                'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-            credentials {
-                username = project.findProperty('ossrhUsername') ?: System.getenv('OSSRH_USERNAME')
-                password = project.findProperty('ossrhPassword') ?: System.getenv('OSSRH_PASSWORD')
-            }
-        }
-        maven {
-            name = 'github'
-            url = uri('https://maven.pkg.github.com/JAI-create-spec/JAI-Router')
-            credentials {
-                username = System.getenv('GITHUB_ACTOR') ?: project.findProperty('gpr.user')
-                password = System.getenv('GITHUB_TOKEN') ?: project.findProperty('gpr.key')
-            }
-        }
+    signing {
+        required { gradle.taskGraph.hasTask('publish') && !version.endsWith('SNAPSHOT') }
+        sign publishing.publications.mavenJava
     }
-}
-
-signing {
-    required { gradle.taskGraph.hasTask('publish') && !version.endsWith('SNAPSHOT') }
-    sign publishing.publications.mavenJava
 }
 
