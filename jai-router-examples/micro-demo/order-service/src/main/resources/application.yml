@@ -1,0 +1,11 @@
+server:
+  port: 9182
+spring:
+  application:
+    name: order-service
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
