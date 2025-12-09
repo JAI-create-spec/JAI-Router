@@ -4,5 +4,10 @@ include 'jai-router-core', 'jai-router-spring-boot-starter', 'jai-router-example
 // Include nested example subprojects so IDEs / Gradle see them as distinct modules
 include 'jai-router-examples:simple-routing-demo'
 
+// Include micro-demo modules
+include 'jai-router-examples:micro-demo:gateway'
+include 'jai-router-examples:micro-demo:order-service'
+include 'jai-router-examples:micro-demo:user-service'
+
 // Include Spring Boot autoconfigure module
 include 'jai-router-spring-boot-autoconfigure'

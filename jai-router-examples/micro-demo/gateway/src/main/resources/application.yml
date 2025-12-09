@@ -1,0 +1,18 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: gateway
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# Backend service URLs
+order:
+  service:
+    url: http://localhost:9182
+user:
+  service:
+    url: http://localhost:9181

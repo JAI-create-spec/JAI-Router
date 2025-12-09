@@ -1,0 +1,11 @@
+server:
+  port: 9181
+spring:
+  application:
+    name: user-service
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+

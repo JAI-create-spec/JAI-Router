@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
+import java.util.Objects;
 
 /**
  * Interface for LLM (Language Model) clients that make routing decisions.
@@ -50,7 +51,8 @@ public interface LlmClient {
     default Optional<RoutingDecision> decideNullable(@NotNull DecisionContext ctx) {
         try {
             RoutingDecision decision = decide(ctx);
-            return Optional.ofNullable(decision);
+            // decide() contract promises a non-null RoutingDecision, use Optional.of
+            return Optional.of(Objects.requireNonNull(decision, "decide() returned null"));
         } catch (Exception ex) {
             if (log.isWarnEnabled()) {
                 log.warn("LLM client decision failed: {}", ex.getMessage());
