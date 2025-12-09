@@ -3,8 +3,6 @@ package io.jai.router.examples;
 import io.jai.router.core.DecisionContext;
 import io.jai.router.core.LlmClient;
 import io.jai.router.core.LlmClientException;
-import io.jai.router.core.RouteRequest;
-import io.jai.router.core.RouteResponse;
 import io.jai.router.core.RoutingDecision;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.boot.SpringApplication;
