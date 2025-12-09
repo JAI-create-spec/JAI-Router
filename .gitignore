@@ -12,6 +12,7 @@ build/
 # Logs and runtime
 *.log
 *.pid
+example.log
 
 # Eclipse
 .settings/
@@ -31,5 +32,3 @@ target/
 MAVEN_CENTRAL_PUBLISHING.md
 PUBLICATION_READY.md
 gradle.properties
-
-

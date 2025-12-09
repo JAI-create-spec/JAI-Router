@@ -46,7 +46,7 @@ import java.util.concurrent.Callable;
  *
  * <p><strong>Requirements:</strong></p>
  * <ul>
- *   <li>OpenAI API key (get from https://platform.openai.com)</li>
+ *   <li>OpenAI API key (get from <a href="https://platform.openai.com">OpenAI platform</a>)</li>
  *   <li>API costs apply per request</li>
  *   <li>Internet connectivity required</li>
  * </ul>
