@@ -33,12 +33,12 @@
 - **Zero-code ML integration** in Java applications
 
 ### Key Benefits:
-✅ **Zero Dependencies Core** — Use anywhere in Java (no Spring required)  
-✅ **Pluggable AI Providers** — Built-in + OpenAI/Anthropic ready  
-✅ **Spring Boot Auto-Config** — Works out-of-the-box  
-✅ **Production Ready** — Null-safe, validated, tested  
-✅ **High Performance** — Sub-100ms routing on average  
-✅ **Framework Agnostic** — Core works without Spring
+- Zero Dependencies Core — Use anywhere in Java (no Spring required)
+- Pluggable AI Providers — Built-in + OpenAI/Anthropic ready
+- Spring Boot Auto-Config — Works out-of-the-box
+- Production Ready — Null-safe, validated, tested
+- High Performance — Sub-100ms routing on average
+- Framework Agnostic — Core works without Spring
 
 ---
 
@@ -92,27 +92,27 @@ curl -X POST http://localhost:8085/api/router/route \
 
 | Feature | Description |
 |---------|-------------|
-| **Intelligent Routing** | AI-powered semantic analysis of requests |
-| **Hybrid Routing (NEW)** | Combines AI classifier + Dijkstra pathfinding for optimal routing |
-| **Multi-Hop Orchestration** | Dijkstra algorithm for complex microservice workflows |
-| **Path Caching** | Sub-millisecond routing for repeated patterns |
-| **Multiple LLM Providers** | Built-in classifier, OpenAI, Anthropic (extensible) |
-| **Spring Boot Integration** | Zero-config auto-configuration + starter |
-| **Production Grade** | Null-safety, validation, error handling |
-| **Performance** | 3-200ms latency (varies by strategy) |
-| **Service Registry** | Dynamic service registration and discovery |
-| **Confidence Scores** | Understand routing confidence and fallback handling |
-| **REST API** | Built-in HTTP endpoints for integration |
-| **Health Checks** | Actuator integration for monitoring |
-| **Framework Agnostic** | Core module works without Spring |
-| **🆕 Hybrid Routing** | AI + Dijkstra pathfinding for microservices orchestration |
-| **🆕 Multi-Hop Routing** | Optimal path calculation through service dependencies |
-| **🆕 Path Caching** | Sub-millisecond routing for repeated workflows |
-| **🆕 Cost Optimization** | Find cheapest/fastest paths through service graphs |
+| Intelligent Routing | AI-powered semantic analysis of requests |
+| Hybrid Routing | Combines AI classifier + Dijkstra pathfinding for optimal routing |
+| Multi-Hop Orchestration | Dijkstra algorithm for complex microservice workflows |
+| Path Caching | Sub-millisecond routing for repeated patterns |
+| Multiple LLM Providers | Built-in classifier, OpenAI, Anthropic (extensible) |
+| Spring Boot Integration | Zero-config auto-configuration + starter |
+| Production Grade | Null-safety, validation, error handling |
+| Performance | 3-200ms latency (varies by strategy) |
+| Service Registry | Dynamic service registration and discovery |
+| Confidence Scores | Understand routing confidence and fallback handling |
+| REST API | Built-in HTTP endpoints for integration |
+| Health Checks | Actuator integration for monitoring |
+| Framework Agnostic | Core module works without Spring |
+| Hybrid Routing | AI + Dijkstra pathfinding for microservices orchestration |
+| Multi-Hop Routing | Optimal path calculation through service dependencies |
+| Path Caching | Sub-millisecond routing for repeated workflows |
+| Cost Optimization | Find cheapest/fastest paths through service graphs |
 
 ---
 
-## 🆕 Hybrid Routing System
+## Hybrid Routing System
 
 JAI Router now includes **intelligent hybrid routing** that combines:
 
@@ -156,13 +156,11 @@ decision = hybridClient.decide(
 // → Uses Dijkstra (optimal multi-hop path)
 ```
 
-**📚 Full Documentation:** See [docs/HYBRID_ROUTING.md](docs/HYBRID_ROUTING.md) for complete guide
-
 ---
 
-## 🔧 Auto-Configuration (Zero-Config Setup)
+## Auto-Configuration (Zero-Config Setup)
 
-JAI Router includes **Spring Boot auto-configuration** for instant setup with minimal configuration.
+JAI Router includes Spring Boot auto-configuration for instant setup with minimal configuration.
 
 ### Basic Setup
 
@@ -190,10 +188,8 @@ jai:
 ```java
 @RestController
 public class MyController {
-    
     @Autowired
-    private Router router;  // ✅ Auto-configured!
-    
+    private Router router;  // Auto-configured
     @PostMapping("/route")
     public RoutingResult route(@RequestBody String request) {
         return router.route(request);
@@ -207,14 +203,14 @@ public class MyController {
 ./gradlew bootRun
 ```
 
-### Hybrid Auto-Configuration ⭐
+### Hybrid Auto-Configuration
 
 **Complete hybrid routing with zero Java code:**
 
 ```yaml
 jai:
   router:
-    llm-provider: hybrid  # ✨ Enables hybrid routing
+    llm-provider: hybrid  # Enables hybrid routing
     
     # Auto-configures AI + Dijkstra strategy selection
     hybrid:
@@ -261,95 +257,18 @@ jai:
         keywords: [user, profile, account]
 ```
 
-**Result**: Complete hybrid routing with AI + Dijkstra + caching! 🚀
-
-### Auto-Configuration Features
-
-| Feature | Description | Configuration |
-|---------|-------------|---------------|
-| **Router Bean** | Automatically created | `@Autowired Router` |
-| **LLM Client** | Provider-based selection | `jai.router.llm-provider` |
-| **Service Registry** | Configured from YAML | `jai.router.services` |
-| **ServiceGraph** | Auto-built for Dijkstra | `jai.router.dijkstra.enabled` |
-| **Hybrid Client** | AI + Dijkstra combined | `llm-provider: hybrid` |
-| **Path Caching** | Performance optimization | `jai.router.dijkstra.cache` |
-| **Health Checks** | Actuator integration | Automatically enabled |
-
-### Configuration Properties
-
-**Core Settings:**
-```yaml
-jai:
-  router:
-    llm-provider: builtin-ai      # builtin-ai | openai | hybrid
-    confidence-threshold: 0.7     # 0.0 - 1.0
-```
-
-**OpenAI Settings:**
-```yaml
-jai:
-  router:
-    openai:
-      api-key: ${OPENAI_API_KEY}
-      model: gpt-4o-mini          # gpt-4o-mini | gpt-4 | gpt-3.5-turbo
-      temperature: 0.0            # 0.0 - 2.0
-      max-retries: 2
-      timeout-seconds: 30
-```
-
-**Hybrid Routing:**
-```yaml
-jai:
-  router:
-    hybrid:
-      enabled: true               # Enable hybrid routing
-      mode: auto                  # auto | ai-only | dijkstra-only
-    
-    dijkstra:
-      enabled: true               # Enable Dijkstra pathfinding
-      source-service: gateway     # Entry point service ID
-      cache:
-        enabled: true             # Enable path caching
-        max-size: 1000           # Max cached paths
-        ttl-ms: 300000           # 5 minute TTL
-```
-
-### Example Applications
-
-**Basic Example:**
-```bash
-# Clone and run auto-config demo
-git clone https://github.com/JAI-create-spec/JAI-Router.git
-cd JAI-Router
-./gradlew :jai-router-examples:auto-config-demo:bootRun
-
-# Test auto-configured routing
-curl -X POST http://localhost:8090/route \
-  -H "Content-Type: application/json" \
-  -d '"Show me analytics dashboard"'
-```
-
-**Hybrid Example:**  
-```bash
-# Run with hybrid profile
-./gradlew :jai-router-examples:auto-config-demo:bootRun --args='--spring.profiles.active=hybrid'
-
-# Test complex multi-hop routing
-curl -X POST http://localhost:8091/route \
-  -H "Content-Type: application/json" \
-  -d '"Auth user and then fetch billing data"'
-```
+**Result**: Complete hybrid routing with AI + Dijkstra + caching
 
 ### IDE Integration
 
 **IntelliJ IDEA:**
-- Auto-completion for `jai.router.*` properties ✅
-- YAML validation and hints ✅
-- Spring Boot configuration assistance ✅
+- Auto-completion for `jai.router.*` properties
+- YAML validation and hints
+- Spring Boot configuration assistance
 
 **VS Code:**
-- Spring Boot extension support ✅
-- YAML schema validation ✅
+- Spring Boot extension support
+- YAML schema validation
 
 ### Production Configuration
 
@@ -925,14 +844,14 @@ Measured on MacBook Pro (M1) with default built-in AI provider:
 
 | Provider | Accuracy | Speed | Cost | Setup | Features |
 |----------|----------|-------|------|-------|----------|
-| **Built-in** | 85% | 🚀 35ms | Free | ✓ Zero-config | Keyword-based |
-| **OpenAI** | 95% | 150ms | $ | API Key | GPT-powered, context-aware |
-| **Anthropic** | 94% | 160ms | $ | API Key | Claude, safer, more explainable |
-| **Local LLM** | 80-90% | 100-500ms | Free | Setup | Ollama, Llama2 integration |
+| Built-in | 85% | 35ms | Free | Zero-config | Keyword-based |
+| OpenAI | 95% | 150ms | Paid | API Key | GPT-powered, context-aware |
+| Anthropic | 94% | 160ms | Paid | API Key | Claude, safer, more explainable |
+| Local LLM | 80-90% | 100-500ms | Free | Setup | Ollama, Llama2 integration |
 
 ---
 
-## 🚀 Hybrid Routing with Dijkstra (NEW in v0.6.0)
+## Hybrid Routing with Dijkstra (NEW in v0.6.0)
 
 JAI Router now supports **intelligent hybrid routing** that combines fast AI classification with optimal pathfinding for microservices orchestration.
 
@@ -962,14 +881,8 @@ Hybrid routing automatically chooses the best strategy based on request complexi
 │           │                        │              │
 │           └────────┬───────────────┘              │
 │                    │                               │
-│       ┌────────────▼──────────────┐               │
-│       │  ComplexityAnalyzer       │               │
-│       │  (Routes by Pattern)      │               │
-│       └───────────────────────────┘               │
-└─────────────────────────────────────────────────────┘
-                     │
-       ┌─────────────┼──────────────┐
-       ▼             ▼              ▼
+│       ┌─────────────┼──────────────┐               │
+│       ▼             ▼              ▼               │
   ┌─────────┐  ┌──────────┐  ┌──────────┐
   │Auth     │  │User      │  │Billing   │
   │Service  │  │Service   │  │Service   │
@@ -1181,9 +1094,10 @@ jai:
 
 ### Learn More
 
-- 📖 **[Hybrid Routing Guide](docs/HYBRID_ROUTING.md)** — Complete documentation
-- 💻 **[Example Code](jai-router-examples/src/main/java/io/jai/router/examples/HybridRoutingExample.java)** — Working demo
-- 📦 **[Package Docs](jai-router-core/src/main/java/io/jai/router/graph/package-info.java)** — API reference
+- Technical Documentation (TECHNICAL.md) — Deep dive into architecture
+- Contributing Guidelines (CONTRIBUTING.md) — How to contribute
+- Changelog (CHANGELOG.md) — Release history
+- License (LICENSE) — MIT License
 
 ---
 
@@ -1313,129 +1227,10 @@ java -version    # Should be 17 or higher
 
 ## Resources
 
-- 📖 **[Technical Documentation](TECHNICAL.md)** — Deep dive into architecture
-- 🤝 **[Contributing Guidelines](CONTRIBUTING.md)** — How to contribute
-- 📝 **[Changelog](CHANGELOG.md)** — Release history
-- 📄 **[License](LICENSE)** — MIT License
-
----
-
-## Comparison with Other AI Libraries
-
-JAI Router is purpose-built for **intelligent request routing** in microservices. Here's how it compares with other popular Java AI libraries:
-
-### Feature Comparison
-
-| Feature | JAI Router | Spring AI | LangChain4j | DeepLearning4j |
-|---------|-----------|-----------|------------|-----------------|
-| **Purpose** | Microservice routing | General AI integration | LLM chain building | Deep learning |
-| **Use Case** | Request classification & routing | Chat, RAG, embeddings | Complex workflows | Neural networks |
-| **Setup Complexity** | ⭐ Simple | ⭐⭐ Medium | ⭐⭐⭐ Complex | ⭐⭐⭐⭐ Very complex |
-| **Spring Boot Integration** | ✅ Auto-config | ✅ Native | ✅ Good | ⚠️ Manual |
-| **Zero-Dependency Core** | ✅ Yes | ❌ No | ❌ No | ❌ No |
-| **Built-in AI** | ✅ Keyword-based | ❌ External only | ❌ External only | ❌ No |
-| **Multiple LLM Providers** | ✅ Pluggable | ✅ Yes | ✅ Yes | ❌ No |
-| **Latency** | 🚀 12-35ms | ⏱️ 100-300ms | ⏱️ 150-500ms | ⏱️ 500ms+ |
-| **Production Ready** | ✅ Yes | ✅ Yes | ✅ Yes | ⚠️ Growing |
-| **Learning Curve** | 📚 Easy | 📚 Medium | 📚 Hard | 📚 Very hard |
-| **License** | MIT | Apache 2.0 | MIT | Apache 2.0 |
-
----
-
-### When to Use JAI Router
-
-**Choose JAI Router if you:**
-- Need to route requests to different services based on content
-- Want a lightweight solution with minimal dependencies
-- Require fast routing decisions (< 50ms latency)
-- Run microservices with diverse service backends
-- Need zero-configuration setup with Spring Boot
-- Want to avoid external AI API costs initially
-
-**Example Use Cases:**
-```
-"Process payment" → Payment Service
-"Generate report" → Analytics Service
-"Verify credentials" → Auth Service
-"Encrypt data" → Security Service
-```
-
----
-
-### When to Use Alternatives
-
-| Library | Best For |
-|---------|----------|
-| **Spring AI** | Building chat apps, RAG systems, embeddings pipelines with Spring Boot |
-| **LangChain4j** | Complex multi-step LLM workflows, prompt chaining, memory management |
-| **DeepLearning4j** | Building neural networks, image recognition, anomaly detection |
-| **Hugging Face (Java)** | Running transformer models locally without cloud APIs |
-
----
-
-### Integration Examples
-
-#### JAI Router + Spring AI
-
-Combine JAI Router for routing with Spring AI for natural conversations:
-
-```java
-@RestController
-public class SmartRouter {
-    
-    @Autowired
-    private Router jaiRouter;  // Request routing
-    
-    @Autowired
-    private ChatClient springAi;  // Conversational AI
-    
-    @PostMapping("/smart-service")
-    public String handle(@RequestBody String request) {
-        // Step 1: Route to appropriate service
-        RoutingResult route = jaiRouter.route(request);
-        
-        // Step 2: Use Spring AI for conversational response
-        String response = springAi.prompt()
-            .user(request)
-            .call()
-            .content();
-            
-        return formatResponse(route, response);
-    }
-}
-```
-
-#### JAI Router + LangChain4j
-
-Use JAI Router for routing, LangChain4j for complex workflows:
-
-```java
-@RestController
-public class AdvancedRouter {
-    
-    @Autowired
-    private Router jaiRouter;
-    
-    private ChatLanguageModel llm;
-    
-    @PostMapping("/advanced")
-    public String handleAdvanced(@RequestBody String request) {
-        // Route request
-        RoutingResult route = jaiRouter.route(request);
-        
-        // Execute workflow based on route
-        if ("analytics".equals(route.getService())) {
-            return executeAnalyticsChain(request);
-        }
-        return "Service not available";
-    }
-    
-    private String executeAnalyticsChain(String request) {
-        // Use LangChain4j for complex chain
-        return "Analytics workflow result";
-    }
-}
-```
+- Technical Documentation (TECHNICAL.md) — Deep dive into architecture
+- Contributing Guidelines (CONTRIBUTING.md) — How to contribute
+- Changelog (CHANGELOG.md) — Release history
+- License (LICENSE) — MIT License
 
 ---
 
@@ -1484,7 +1279,7 @@ SOFTWARE.
 
 ## Acknowledgments
 
-- Built with ☕ and Java
+- Built with Java
 - Powered by Spring Boot
 - Inspired by microservice architecture best practices
 
@@ -1492,9 +1287,6 @@ SOFTWARE.
 
 <div align="center">
 
-**[⬆ back to top](#jAI-router---intelligent-microservice-routing-engine)**
-
-Made with ❤️ by the JAI Router Community
+[Back to top](#jai-router---intelligent-microservice-routing-engine)
 
 </div>
-
