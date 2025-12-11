@@ -160,6 +160,231 @@ decision = hybridClient.decide(
 
 ---
 
+## 🔧 Auto-Configuration (Zero-Config Setup)
+
+JAI Router includes **Spring Boot auto-configuration** for instant setup with minimal configuration.
+
+### Basic Setup
+
+1. **Add Starter Dependency**:
+```gradle
+implementation 'io.jai:jai-router-spring-boot-starter:0.6.0'
+```
+
+2. **Add Configuration**:
+```yaml
+jai:
+  router:
+    llm-provider: builtin-ai  # or openai, hybrid
+    confidence-threshold: 0.7
+    services:
+      - id: auth-service
+        display-name: Authentication
+        keywords: [login, auth, token, verify]
+      - id: analytics-service  
+        display-name: Analytics
+        keywords: [report, dashboard, analytics, metrics]
+```
+
+3. **Use in Controller** (Router bean automatically injected):
+```java
+@RestController
+public class MyController {
+    
+    @Autowired
+    private Router router;  // ✅ Auto-configured!
+    
+    @PostMapping("/route")
+    public RoutingResult route(@RequestBody String request) {
+        return router.route(request);
+    }
+}
+```
+
+4. **Run Application**:
+```bash
+# Router automatically configured based on application.yml!
+./gradlew bootRun
+```
+
+### Hybrid Auto-Configuration ⭐
+
+**Complete hybrid routing with zero Java code:**
+
+```yaml
+jai:
+  router:
+    llm-provider: hybrid  # ✨ Enables hybrid routing
+    
+    # Auto-configures AI + Dijkstra strategy selection
+    hybrid:
+      enabled: true
+      mode: auto
+    
+    # Auto-configures service graph with caching
+    dijkstra:
+      enabled: true
+      source-service: gateway
+      
+      # Path caching configuration
+      cache:
+        enabled: true
+        max-size: 1000
+        ttl-ms: 300000  # 5 minutes
+      
+      # Edge weight factors  
+      weights:
+        latency: 0.5    # 50% weight on speed
+        cost: 0.3       # 30% weight on cost
+        reliability: 0.2 # 20% weight on reliability
+      
+      # Service dependency graph
+      edges:
+        - from: gateway
+          to: auth-service
+          latency: 10.0
+          cost: 0.0
+          reliability: 0.999
+        - from: auth-service
+          to: user-service
+          latency: 20.0
+          cost: 0.001
+          reliability: 0.99
+    
+    # Service definitions
+    services:
+      - id: gateway
+        keywords: []
+      - id: auth-service
+        keywords: [login, auth, token]
+      - id: user-service
+        keywords: [user, profile, account]
+```
+
+**Result**: Complete hybrid routing with AI + Dijkstra + caching! 🚀
+
+### Auto-Configuration Features
+
+| Feature | Description | Configuration |
+|---------|-------------|---------------|
+| **Router Bean** | Automatically created | `@Autowired Router` |
+| **LLM Client** | Provider-based selection | `jai.router.llm-provider` |
+| **Service Registry** | Configured from YAML | `jai.router.services` |
+| **ServiceGraph** | Auto-built for Dijkstra | `jai.router.dijkstra.enabled` |
+| **Hybrid Client** | AI + Dijkstra combined | `llm-provider: hybrid` |
+| **Path Caching** | Performance optimization | `jai.router.dijkstra.cache` |
+| **Health Checks** | Actuator integration | Automatically enabled |
+
+### Configuration Properties
+
+**Core Settings:**
+```yaml
+jai:
+  router:
+    llm-provider: builtin-ai      # builtin-ai | openai | hybrid
+    confidence-threshold: 0.7     # 0.0 - 1.0
+```
+
+**OpenAI Settings:**
+```yaml
+jai:
+  router:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      model: gpt-4o-mini          # gpt-4o-mini | gpt-4 | gpt-3.5-turbo
+      temperature: 0.0            # 0.0 - 2.0
+      max-retries: 2
+      timeout-seconds: 30
+```
+
+**Hybrid Routing:**
+```yaml
+jai:
+  router:
+    hybrid:
+      enabled: true               # Enable hybrid routing
+      mode: auto                  # auto | ai-only | dijkstra-only
+    
+    dijkstra:
+      enabled: true               # Enable Dijkstra pathfinding
+      source-service: gateway     # Entry point service ID
+      cache:
+        enabled: true             # Enable path caching
+        max-size: 1000           # Max cached paths
+        ttl-ms: 300000           # 5 minute TTL
+```
+
+### Example Applications
+
+**Basic Example:**
+```bash
+# Clone and run auto-config demo
+git clone https://github.com/JAI-create-spec/JAI-Router.git
+cd JAI-Router
+./gradlew :jai-router-examples:auto-config-demo:bootRun
+
+# Test auto-configured routing
+curl -X POST http://localhost:8090/route \
+  -H "Content-Type: application/json" \
+  -d '"Show me analytics dashboard"'
+```
+
+**Hybrid Example:**  
+```bash
+# Run with hybrid profile
+./gradlew :jai-router-examples:auto-config-demo:bootRun --args='--spring.profiles.active=hybrid'
+
+# Test complex multi-hop routing
+curl -X POST http://localhost:8091/route \
+  -H "Content-Type: application/json" \
+  -d '"Auth user and then fetch billing data"'
+```
+
+### IDE Integration
+
+**IntelliJ IDEA:**
+- Auto-completion for `jai.router.*` properties ✅
+- YAML validation and hints ✅
+- Spring Boot configuration assistance ✅
+
+**VS Code:**
+- Spring Boot extension support ✅
+- YAML schema validation ✅
+
+### Production Configuration
+
+```yaml
+# production.yml
+jai:
+  router:
+    llm-provider: hybrid
+    confidence-threshold: 0.85    # Higher threshold for prod
+    
+    hybrid:
+      enabled: true
+      mode: auto
+    
+    dijkstra:
+      enabled: true
+      cache:
+        max-size: 5000           # Larger cache for production
+        ttl-ms: 120000           # 2 minute TTL
+    
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      model: gpt-4o              # Premium model
+      timeout-seconds: 10        # Shorter timeout
+
+# Enable monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+```
+
+---
+
 ## Architecture
 
 ### System Design

@@ -3,6 +3,7 @@ package io.jai.router.spring;
 import io.jai.router.core.LlmClient;
 import io.jai.router.core.Router;
 import io.jai.router.core.RouterEngine;
+import io.jai.router.graph.*;
 import io.jai.router.llm.BuiltinAiLlmClient;
 import io.jai.router.registry.InMemoryServiceRegistry;
 import io.jai.router.registry.ServiceDefinition;
@@ -109,6 +110,153 @@ public class JAIRouterAutoConfiguration {
         }
 
         return new InMemoryServiceRegistry(services);
+    }
+
+    /**
+     * Creates ServiceGraph for Dijkstra routing when enabled.
+     * <p>
+     * Activated when {@code jai.router.dijkstra.enabled=true}.
+     * </p>
+     *
+     * @return configured ServiceGraph
+     */
+    @Bean
+    @ConditionalOnProperty(name = "jai.router.dijkstra.enabled", havingValue = "true")
+    @ConditionalOnMissingBean
+    public ServiceGraph serviceGraph() {
+        ServiceGraph graph = new ServiceGraph();
+        JAIRouterProperties.Dijkstra dijkstra = props.getDijkstra();
+
+        // Add services to graph
+        if (props.getServices() != null) {
+            for (JAIRouterProperties.Service service : props.getServices()) {
+                if (service.getId() != null && !service.getId().isBlank()) {
+                    Map<String, Object> metadata = new HashMap<>();
+                    if (service.getDisplayName() != null) {
+                        metadata.put("displayName", service.getDisplayName());
+                    }
+                    metadata.put("keywords", service.getKeywords());
+
+                    graph.addService(service.getId(), metadata);
+                }
+            }
+        }
+
+        // Add edges to graph
+        if (dijkstra.getEdges() != null) {
+            for (JAIRouterProperties.Dijkstra.Edge edge : dijkstra.getEdges()) {
+                if (edge.getFrom() != null && edge.getTo() != null) {
+                    EdgeMetrics metrics = new EdgeMetrics(
+                        edge.getLatency(),
+                        edge.getCost(),
+                        edge.getReliability()
+                    );
+                    graph.addEdge(edge.getFrom(), edge.getTo(), metrics);
+                }
+            }
+        }
+
+        log.info("Created ServiceGraph with {} services and {} edges",
+                 graph.size(),
+                 dijkstra.getEdges() != null ? dijkstra.getEdges().size() : 0);
+
+        return graph;
+    }
+
+    /**
+     * Creates DijkstraLlmClient when enabled.
+     * <p>
+     * Activated when {@code jai.router.dijkstra.enabled=true}.
+     * </p>
+     *
+     * @param graphProvider provides the ServiceGraph
+     * @return configured DijkstraLlmClient
+     */
+    @Bean
+    @ConditionalOnProperty(name = "jai.router.dijkstra.enabled", havingValue = "true")
+    @ConditionalOnMissingBean(name = "dijkstraLlmClient")
+    public LlmClient dijkstraLlmClient(ObjectProvider<ServiceGraph> graphProvider) {
+        ServiceGraph graph = graphProvider.getIfAvailable();
+        if (graph == null) {
+            throw new IllegalStateException("ServiceGraph is required for Dijkstra routing");
+        }
+
+        String sourceService = props.getDijkstra().getSourceService();
+        log.info("Creating DijkstraLlmClient with source service: {}", sourceService);
+
+        return new DijkstraLlmClient(graph, sourceService);
+    }
+
+    /**
+     * Creates CachedDijkstraClient when caching is enabled.
+     * <p>
+     * Activated when {@code jai.router.dijkstra.enabled=true} and
+     * {@code jai.router.dijkstra.cache.enabled=true}.
+     * </p>
+     *
+     * @param dijkstraProvider provides the DijkstraLlmClient
+     * @return configured CachedDijkstraClient
+     */
+    @Bean
+    @ConditionalOnProperty(name = "jai.router.dijkstra.enabled", havingValue = "true")
+    @ConditionalOnMissingBean(name = "cachedDijkstraLlmClient")
+    public LlmClient cachedDijkstraLlmClient(ObjectProvider<LlmClient> dijkstraProvider) {
+        // Check if caching is enabled (default true)
+        boolean cacheEnabled = props.getDijkstra().getCache().isEnabled();
+        if (!cacheEnabled) {
+            return null; // Don't create cached version
+        }
+        // Find the DijkstraLlmClient specifically
+        LlmClient dijkstraClient = dijkstraProvider.stream()
+            .filter(client -> client instanceof DijkstraLlmClient)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("DijkstraLlmClient not found for caching"));
+
+        JAIRouterProperties.Dijkstra.Cache cacheConfig = props.getDijkstra().getCache();
+
+        log.info("Creating CachedDijkstraClient with maxSize: {}, ttl: {}ms",
+                 cacheConfig.getMaxSize(), cacheConfig.getTtlMs());
+
+        return new CachedDijkstraClient(
+            dijkstraClient,
+            cacheConfig.getMaxSize(),
+            cacheConfig.getTtlMs()
+        );
+    }
+
+    /**
+     * Creates HybridLlmClient when hybrid routing is enabled.
+     * <p>
+     * Activated when {@code jai.router.llm-provider=hybrid}.
+     * </p>
+     *
+     * @param providers provides all available LlmClients
+     * @return configured HybridLlmClient
+     */
+    @Bean
+    @ConditionalOnProperty(name = "jai.router.llm-provider", havingValue = "hybrid")
+    @ConditionalOnMissingBean(name = "hybridLlmClient")
+    public LlmClient hybridLlmClient(ObjectProvider<LlmClient> providers) {
+
+        List<LlmClient> allClients = providers.stream().toList();
+
+        // Get AI client (builtin or OpenAI)
+        LlmClient aiClient = allClients.stream()
+            .filter(client -> client instanceof BuiltinAiLlmClient || client instanceof OpenAiLlmClient)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("No AI LlmClient found for hybrid routing"));
+
+        // Get Dijkstra client (cached or uncached)
+        LlmClient dijkstraClient = allClients.stream()
+            .filter(client -> client instanceof CachedDijkstraClient || client instanceof DijkstraLlmClient)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("No Dijkstra LlmClient found for hybrid routing"));
+
+        log.info("Creating HybridLlmClient with AI: {} and Dijkstra: {}",
+                 aiClient.getClass().getSimpleName(),
+                 dijkstraClient.getClass().getSimpleName());
+
+        return new HybridLlmClient(aiClient, dijkstraClient);
     }
 
     /**

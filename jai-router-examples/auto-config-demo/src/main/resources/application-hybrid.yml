@@ -1,0 +1,59 @@
+# Hybrid Routing Auto-Configuration Example
+server:
+  port: 8091
+
+    io.jai.router: DEBUG
+  level:
+logging:
+
+      show-details: always
+    health:
+  endpoint:
+        include: health,info,metrics
+      exposure:
+    web:
+  endpoints:
+management:
+
+        keywords: [billing, payment, invoice, charge, money, subscription, card]
+        display-name: Billing Service
+      - id: billing-service
+
+        keywords: [user, profile, account, personal, settings, preferences]
+        display-name: User Management Service
+      - id: user-service
+
+        keywords: [auth, login, signin, verify, token, password, logout]
+        display-name: Authentication Service
+      - id: auth-service
+
+        keywords: []
+        display-name: API Gateway
+      - id: gateway
+    services:
+    # Service definitions
+
+          reliability: 0.98
+          cost: 0.002
+          latency: 20.0
+          to: billing-service
+        - from: user-service
+          reliability: 0.99
+          cost: 0.001
+          latency: 15.0
+          to: user-service
+        - from: auth-service
+          reliability: 0.999
+          cost: 0.0
+          latency: 10.0
+          to: auth-service
+        - from: gateway
+      edges:
+      # Service graph edges
+
+        reliability: 0.2
+        cost: 0.3
+        latency: 0.5
+      weights:
+
+        ttl-ms: 300000  # 5 minutes

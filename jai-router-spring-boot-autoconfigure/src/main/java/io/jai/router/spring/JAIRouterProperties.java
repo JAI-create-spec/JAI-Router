@@ -33,7 +33,7 @@ import java.util.List;
 public class JAIRouterProperties {
 
     /**
-     * LLM provider to use (builtin-ai or openai).
+     * LLM provider to use (builtin-ai, openai, or hybrid).
      * Default: builtin-ai
      */
     private String llmProvider = "builtin-ai";
@@ -53,6 +53,16 @@ public class JAIRouterProperties {
      * OpenAI-specific configuration.
      */
     private OpenAi openai = new OpenAi();
+
+    /**
+     * Hybrid routing configuration.
+     */
+    private Hybrid hybrid = new Hybrid();
+
+    /**
+     * Dijkstra routing configuration.
+     */
+    private Dijkstra dijkstra = new Dijkstra();
 
     public String getLlmProvider() {
         return llmProvider;
@@ -84,6 +94,22 @@ public class JAIRouterProperties {
 
     public void setOpenai(OpenAi openai) {
         this.openai = openai != null ? openai : new OpenAi();
+    }
+
+    public Hybrid getHybrid() {
+        return hybrid;
+    }
+
+    public void setHybrid(Hybrid hybrid) {
+        this.hybrid = hybrid != null ? hybrid : new Hybrid();
+    }
+
+    public Dijkstra getDijkstra() {
+        return dijkstra;
+    }
+
+    public void setDijkstra(Dijkstra dijkstra) {
+        this.dijkstra = dijkstra != null ? dijkstra : new Dijkstra();
     }
 
     /**
@@ -218,6 +244,280 @@ public class JAIRouterProperties {
 
         public void setRetryBackoffMillis(int retryBackoffMillis) {
             this.retryBackoffMillis = retryBackoffMillis;
+        }
+    }
+
+    /**
+     * Hybrid routing configuration.
+     */
+    public static class Hybrid {
+
+        /**
+         * Whether to enable hybrid routing (AI + Dijkstra).
+         * Default: false
+         */
+        private boolean enabled = false;
+
+        /**
+         * Strategy selection mode (auto, ai-only, dijkstra-only).
+         * Default: auto
+         */
+        private String mode = "auto";
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getMode() {
+            return mode;
+        }
+
+        public void setMode(String mode) {
+            this.mode = mode;
+        }
+    }
+
+    /**
+     * Dijkstra routing configuration.
+     */
+    public static class Dijkstra {
+
+        /**
+         * Whether to enable Dijkstra routing.
+         * Default: false
+         */
+        private boolean enabled = false;
+
+        /**
+         * Source service ID for pathfinding.
+         * Default: gateway
+         */
+        private String sourceService = "gateway";
+
+        /**
+         * Cache configuration.
+         */
+        private Cache cache = new Cache();
+
+        /**
+         * Edge weight configuration.
+         */
+        private Weights weights = new Weights();
+
+        /**
+         * Service edges configuration.
+         */
+        private List<Edge> edges = new ArrayList<>();
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getSourceService() {
+            return sourceService;
+        }
+
+        public void setSourceService(String sourceService) {
+            this.sourceService = sourceService;
+        }
+
+        public Cache getCache() {
+            return cache;
+        }
+
+        public void setCache(Cache cache) {
+            this.cache = cache != null ? cache : new Cache();
+        }
+
+        public Weights getWeights() {
+            return weights;
+        }
+
+        public void setWeights(Weights weights) {
+            this.weights = weights != null ? weights : new Weights();
+        }
+
+        public List<Edge> getEdges() {
+            return edges;
+        }
+
+        public void setEdges(List<Edge> edges) {
+            this.edges = edges != null ? edges : new ArrayList<>();
+        }
+
+        /**
+         * Cache configuration for Dijkstra paths.
+         */
+        public static class Cache {
+
+            /**
+             * Whether to enable path caching.
+             * Default: true
+             */
+            private boolean enabled = true;
+
+            /**
+             * Maximum number of cached paths.
+             * Default: 1000
+             */
+            private int maxSize = 1000;
+
+            /**
+             * Time-to-live for cached paths (in milliseconds).
+             * Default: 300000 (5 minutes)
+             */
+            private long ttlMs = 300_000;
+
+            public boolean isEnabled() {
+                return enabled;
+            }
+
+            public void setEnabled(boolean enabled) {
+                this.enabled = enabled;
+            }
+
+            public int getMaxSize() {
+                return maxSize;
+            }
+
+            public void setMaxSize(int maxSize) {
+                this.maxSize = maxSize;
+            }
+
+            public long getTtlMs() {
+                return ttlMs;
+            }
+
+            public void setTtlMs(long ttlMs) {
+                this.ttlMs = ttlMs;
+            }
+        }
+
+        /**
+         * Weight factors for edge calculation.
+         */
+        public static class Weights {
+
+            /**
+             * Weight factor for latency (0.0 - 1.0).
+             * Default: 0.5
+             */
+            private double latency = 0.5;
+
+            /**
+             * Weight factor for cost (0.0 - 1.0).
+             * Default: 0.3
+             */
+            private double cost = 0.3;
+
+            /**
+             * Weight factor for reliability (0.0 - 1.0).
+             * Default: 0.2
+             */
+            private double reliability = 0.2;
+
+            public double getLatency() {
+                return latency;
+            }
+
+            public void setLatency(double latency) {
+                this.latency = latency;
+            }
+
+            public double getCost() {
+                return cost;
+            }
+
+            public void setCost(double cost) {
+                this.cost = cost;
+            }
+
+            public double getReliability() {
+                return reliability;
+            }
+
+            public void setReliability(double reliability) {
+                this.reliability = reliability;
+            }
+        }
+
+        /**
+         * Service edge configuration.
+         */
+        public static class Edge {
+
+            /**
+             * Source service ID.
+             */
+            private String from;
+
+            /**
+             * Target service ID.
+             */
+            private String to;
+
+            /**
+             * Edge latency in milliseconds.
+             */
+            private double latency;
+
+            /**
+             * Edge cost (arbitrary units).
+             */
+            private double cost;
+
+            /**
+             * Edge reliability (0.0 - 1.0).
+             */
+            private double reliability = 0.99;
+
+            public String getFrom() {
+                return from;
+            }
+
+            public void setFrom(String from) {
+                this.from = from;
+            }
+
+            public String getTo() {
+                return to;
+            }
+
+            public void setTo(String to) {
+                this.to = to;
+            }
+
+            public double getLatency() {
+                return latency;
+            }
+
+            public void setLatency(double latency) {
+                this.latency = latency;
+            }
+
+            public double getCost() {
+                return cost;
+            }
+
+            public void setCost(double cost) {
+                this.cost = cost;
+            }
+
+            public double getReliability() {
+                return reliability;
+            }
+
+            public void setReliability(double reliability) {
+                this.reliability = reliability;
+            }
         }
     }
 }
