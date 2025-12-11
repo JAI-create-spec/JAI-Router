@@ -372,6 +372,98 @@ public class CustomRouterConfig {
 }
 ```
 
+### Spring Boot Auto-Configuration
+
+JAI Router provides automatic Spring Boot integration through `JAIRouterAutoConfiguration`.
+
+**Auto-Configuration Registration**:
+
+File: `jai-router-spring-boot-autoconfigure/src/main/resources/META-INF/spring.factories`
+```properties
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  io.jai.router.spring.JAIRouterAutoConfiguration
+```
+
+**Beans Created Automatically**:
+
+1. **ServiceRegistry** - Populated from `jai.router.services` configuration
+2. **LlmClient** - Based on `jai.router.llm-provider`:
+   - `builtin-ai` creates `BuiltinAiLlmClient`
+   - `openai` creates `OpenAiLlmClient`
+   - `hybrid` creates `HybridLlmClient`
+3. **ServiceGraph** - When `jai.router.dijkstra.enabled=true`
+4. **DijkstraLlmClient** - For Dijkstra pathfinding
+5. **CachedDijkstraClient** - Wraps Dijkstra with caching
+6. **RouterHealthProbe** - For health monitoring
+
+**Configuration Properties**:
+
+Defined in `JAIRouterProperties` with prefix `jai.router`:
+- `llm-provider` - LLM client selection (builtin-ai, openai, hybrid)
+- `confidence-threshold` - Routing confidence threshold (0.0-1.0)
+- `services[]` - Service definitions with keywords
+- `hybrid.enabled` - Enable hybrid routing
+- `dijkstra.enabled` - Enable Dijkstra pathfinding
+- `dijkstra.cache.*` - Cache configuration (size, TTL)
+- `dijkstra.edges[]` - Service graph edges with metrics
+
+**Conditional Bean Creation**:
+
+```java
+@Bean
+@ConditionalOnProperty(name = "jai.router.llm-provider", havingValue = "hybrid")
+@ConditionalOnMissingBean(name = "hybridLlmClient")
+public LlmClient hybridLlmClient(...) {
+    // Creates HybridLlmClient only when llm-provider=hybrid
+}
+```
+
+**Example Configuration**:
+
+```yaml
+jai:
+  router:
+    llm-provider: hybrid
+    confidence-threshold: 0.7
+    
+    dijkstra:
+      enabled: true
+      source-service: gateway
+      cache:
+        enabled: true
+        max-size: 1000
+        ttl-ms: 300000
+      edges:
+        - from: gateway
+          to: auth-service
+          latency: 10.0
+          cost: 0.0
+          reliability: 0.999
+    
+    services:
+      - id: gateway
+        keywords: []
+      - id: auth-service
+        keywords: [login, auth, token]
+```
+
+**Testing Auto-Configuration**:
+
+```java
+@SpringBootTest
+class AutoConfigTest {
+    
+    @Autowired
+    private LlmClient client;
+    
+    @Test
+    void clientIsAutoConfigured() {
+        assertThat(client).isNotNull();
+        assertThat(client).isInstanceOf(BuiltinAiLlmClient.class);
+    }
+}
+```
+
 ## Testing
 
 ### Unit Testing

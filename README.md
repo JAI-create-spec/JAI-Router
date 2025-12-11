@@ -487,7 +487,7 @@ After building and publishing to local Maven repository, add to your `pom.xml`:
 <dependency>
     <groupId>io.jai</groupId>
     <artifactId>jai-router-spring-boot-starter</artifactId>
-    <version>0.5.0-SNAPSHOT</version>
+    <version>0.6.0</version>
 </dependency>
 ```
 
@@ -500,7 +500,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.jai:jai-router-spring-boot-starter:0.5.0-SNAPSHOT'
+    implementation 'io.jai:jai-router-spring-boot-starter:0.6.0'
 }
 ```
 

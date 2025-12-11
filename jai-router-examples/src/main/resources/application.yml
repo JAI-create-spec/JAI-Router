@@ -1,4 +1,15 @@
 jai:
   router:
-    llm:
-      provider: builtin-ai
+    llm-provider: builtin-ai
+    confidence-threshold: 0.5
+    services:
+      - id: bi-service
+        display-name: Business Intelligence Service
+        keywords: [kpi, report, dashboard, analytics, metrics, chart, visualization]
+      - id: cryptography-service
+        display-name: Cryptography Service
+        keywords: [encrypt, decrypt, hash, cipher, crypto, security, key]
+      - id: default-service
+        display-name: Default Service
+        keywords: []
+

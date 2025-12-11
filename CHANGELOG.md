@@ -7,17 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.0] - 2024-12-11
+## [0.6.0] - 2025-12-11
 
-### 🎉 Major Features Added
+### Major Features Added
 
 #### Hybrid Routing System
-- **NEW**: Intelligent hybrid routing combining AI classification with Dijkstra pathfinding
-- **NEW**: `HybridLlmClient` - Automatically chooses optimal routing strategy based on request complexity
-- **NEW**: `DijkstraLlmClient` - Implements Dijkstra's algorithm for multi-hop service orchestration
-- **NEW**: `ServiceGraph` - Thread-safe service graph modeling with weighted edges
-- **NEW**: `CachedDijkstraClient` - Path caching for sub-millisecond routing of repeated workflows
-- **NEW**: `ComplexityAnalyzer` - Intelligent request pattern detection
+- NEW: Intelligent hybrid routing combining AI classification with Dijkstra pathfinding
+- NEW: HybridLlmClient - Automatically chooses optimal routing strategy based on request complexity
+- NEW: DijkstraLlmClient - Implements Dijkstra's algorithm for multi-hop service orchestration
+- NEW: ServiceGraph - Thread-safe service graph modeling with weighted edges
+- NEW: CachedDijkstraClient - Path caching for sub-millisecond routing of repeated workflows
+- NEW: ComplexityAnalyzer - Intelligent request pattern detection
+
+#### Spring Boot Auto-Configuration
+- NEW: JAIRouterAutoConfiguration with automatic bean creation
+- NEW: JAIRouterProperties for YAML-based configuration
+- NEW: Automatic LlmClient selection based on llm-provider property
+- NEW: ServiceGraph auto-configuration from YAML edges
+- NEW: Hybrid routing auto-configuration with dijkstra.enabled property
+- NEW: Path caching auto-configuration with configurable TTL and size
 
 #### Core Components
 - Added `ServiceGraph` class for modeling microservices as a weighted graph
@@ -38,15 +46,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ComplexityAnalyzerTest.java` - Request analysis (12 tests)
   - `HybridLlmClientTest.java` - Hybrid routing (4 tests)
 - `HybridRoutingExample.java` - Complete working demonstration
-- `docs/HYBRID_ROUTING.md` - Comprehensive hybrid routing guide
-- `docs/IMPLEMENTATION_SUMMARY.md` - Implementation summary and technical details
+- `AutoConfigExample.java` - Spring Boot auto-configuration demo
+- `spring.factories` - Auto-configuration registration for Spring Boot
+- `application-examples.yml` - Configuration examples for all modes
+- `application-hybrid.yml` - Hybrid routing configuration example
 - Package-level documentation in `package-info.java`
 
 ### Enhanced
-- Updated README.md with hybrid routing documentation and examples
+- Updated README.md with hybrid routing and auto-configuration documentation
+- Updated TECHNICAL.md with Spring Boot auto-configuration section
 - Improved project structure documentation
 - Added performance benchmarks and comparisons
 - Enhanced features table with new capabilities
+- Simplified starter module to pure dependency aggregator
+
+### Fixed
+- Fixed Spring Boot auto-configuration registration via spring.factories
+- Removed obsolete AutoConfiguration.imports causing class not found errors
+- Fixed BuiltinAiLlmClient keyword mapping from service definitions
+- Corrected confidence threshold configuration for test compatibility
+- Cleaned up duplicate configuration files in starter module
 
 ### Technical Details
 - **Algorithm**: Dijkstra's shortest path (O((V + E) log V))
