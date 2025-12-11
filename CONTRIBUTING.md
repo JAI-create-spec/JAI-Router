@@ -104,7 +104,7 @@ git merge upstream/develop
 - Use meaningful test names with `@DisplayName`
 - Follow AAA pattern: Arrange, Act, Assert
 
-Example:
+**Example: Basic Routing Test**:
 ```java
 @Test
 @DisplayName("Should route to auth service when input contains login keywords")
@@ -118,6 +118,66 @@ void shouldRouteToAuthService() {
     // Assert
     assertThat(result.service()).isEqualTo("auth-service");
     assertThat(result.confidence()).isGreaterThan(0.7);
+}
+```
+
+**Example: Graph Routing Test (v0.6.0+)**:
+```java
+@Test
+@DisplayName("Should find optimal path through service graph")
+void shouldFindOptimalPath() {
+    // Arrange
+    ServiceGraph graph = new ServiceGraph();
+    graph.addService("gateway", Map.of("type", "entry"));
+    graph.addService("auth-service", Map.of("endpoint", "http://auth:8080"));
+    graph.addEdge("gateway", "auth-service", new EdgeMetrics(10.0, 0.0, 0.999));
+    
+    DijkstraLlmClient dijkstra = new DijkstraLlmClient(graph, "gateway");
+    
+    // Act
+    RoutingDecision decision = dijkstra.decide(
+        DecisionContext.of("TARGET:auth-service")
+    );
+    
+    // Assert
+    assertThat(decision.service()).isEqualTo("auth-service");
+    assertThat(decision.explanation()).contains("Optimal path");
+    assertThat(decision.confidence()).isGreaterThan(0.9);
+}
+```
+
+**Example: Hybrid Routing Test**:
+```java
+@Test
+@DisplayName("Should use AI classifier for simple requests")
+void shouldUseAiForSimpleRequest() {
+    // Arrange
+    HybridLlmClient hybrid = new HybridLlmClient(aiClient, dijkstraClient);
+    
+    // Act
+    RoutingDecision decision = hybrid.decide(
+        DecisionContext.of("Show user dashboard")
+    );
+    
+    // Assert - Should use fast AI path
+    verify(aiClient, times(1)).decide(any());
+    verify(dijkstraClient, never()).decide(any());
+}
+
+@Test
+@DisplayName("Should use Dijkstra for multi-hop requests")
+void shouldUseDijkstraForMultiHop() {
+    // Arrange
+    HybridLlmClient hybrid = new HybridLlmClient(aiClient, dijkstraClient);
+    
+    // Act
+    RoutingDecision decision = hybrid.decide(
+        DecisionContext.of("Auth user and then fetch billing")
+    );
+    
+    // Assert - Should use Dijkstra path
+    verify(dijkstraClient, times(1)).decide(any());
+    verify(aiClient, never()).decide(any());
 }
 ```
 
@@ -218,11 +278,23 @@ RoutingResult route(@NotNull String input);
 ```
 feat(core): add Redis cache support for routing decisions
 
+feat(graph): implement Dijkstra pathfinding for multi-hop routing
+
+feat(graph): add hybrid routing with AI + Dijkstra strategies
+
 fix(spring-boot): resolve circular dependency in auto-configuration
+
+fix(graph): correct edge weight calculation in ServiceGraph
 
 docs(readme): update installation instructions for Java 17
 
+docs(hybrid): add comprehensive hybrid routing guide
+
 test(core): add comprehensive tests for RouterEngine
+
+test(graph): add 33 unit tests for hybrid routing components
+
+refactor(graph): optimize Dijkstra algorithm for large graphs
 ```
 
 ### Atomic Commits
@@ -295,6 +367,110 @@ How was this tested?
 - Maintainers will merge your PR
 - Delete your feature branch after merge
 - Update your local repository
+
+## Contributing to Hybrid Routing (v0.6.0+)
+
+If you're interested in contributing to the hybrid routing system, here are some areas where help is welcome:
+
+### Enhancement Opportunities
+
+1. **Additional Routing Algorithms**
+   - A* search algorithm for heuristic-based routing
+   - Bellman-Ford for negative weight handling
+   - Floyd-Warshall for all-pairs shortest paths
+
+2. **Performance Optimizations**
+   - Parallel path calculation for multiple targets
+   - Graph compression for large service meshes
+   - Incremental graph updates
+
+3. **Advanced Features**
+   - Multi-objective optimization (cost + latency + reliability)
+   - Time-based routing (peak hours vs off-peak)
+   - Region-aware routing
+   - A/B testing support
+
+4. **Spring Boot Integration**
+   - Auto-configuration for hybrid routing
+   - Health check integration
+   - Metrics and monitoring
+   - Configuration properties
+
+5. **Tooling**
+   - Graph visualization UI
+   - Service dependency analyzer
+   - Performance profiler
+   - Route simulator
+
+### Working with Graph Module
+
+**Location**: `jai-router-core/src/main/java/io/jai/router/graph/`
+
+**Key Files**:
+- `ServiceGraph.java` - Graph data structure
+- `DijkstraLlmClient.java` - Pathfinding algorithm
+- `HybridLlmClient.java` - Strategy selection
+- `ComplexityAnalyzer.java` - Pattern detection
+- `CachedDijkstraClient.java` - Caching layer
+
+**Testing**: `jai-router-core/src/test/java/io/jai/router/graph/`
+
+### Example Contribution: Add A* Algorithm
+
+```java
+// 1. Create new class
+public class AStarLlmClient implements LlmClient {
+    private final ServiceGraph graph;
+    private final HeuristicFunction heuristic;
+    
+    @Override
+    public RoutingDecision decide(DecisionContext ctx) {
+        // Implement A* algorithm
+    }
+}
+
+// 2. Add tests
+@Test
+void shouldFindPathWithHeuristic() {
+    AStarLlmClient astar = new AStarLlmClient(graph, heuristic);
+    // Test implementation
+}
+
+// 3. Update documentation
+// Add to docs/HYBRID_ROUTING.md
+
+// 4. Submit PR with:
+// - Implementation
+// - Tests (100% coverage)
+// - Documentation
+// - Example usage
+```
+
+### Performance Guidelines
+
+When contributing to performance-critical code:
+
+1. **Benchmark before and after**
+   ```java
+   @Benchmark
+   public void benchmarkRouting() {
+       hybrid.decide(context);
+   }
+   ```
+
+2. **Profile with JMH** for micro-benchmarks
+3. **Test with realistic data** (20-100 services)
+4. **Document complexity** (Big-O notation)
+
+### Documentation Requirements
+
+For hybrid routing contributions, please update:
+
+1. **README.md** - If user-facing changes
+2. **docs/HYBRID_ROUTING.md** - Detailed guide
+3. **TECHNICAL.md** - Algorithm details
+4. **Javadoc** - All public APIs
+5. **CHANGELOG.md** - Version entry
 
 ## Questions?
 

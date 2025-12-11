@@ -1,0 +1,36 @@
+# JAI Router Auto-Configuration Demo
+server:
+  port: 8090
+
+# Basic auto-configuration
+jai:
+  router:
+    llm-provider: builtin-ai
+    confidence-threshold: 0.7
+
+    services:
+      - id: analytics-service
+        display-name: Analytics Service
+        keywords: [analytics, dashboard, report, metrics, chart, kpi]
+
+      - id: auth-service
+        display-name: Authentication Service
+        keywords: [auth, login, signin, verify, token, password]
+
+      - id: billing-service
+        display-name: Billing Service
+        keywords: [billing, payment, invoice, charge, money, subscription]
+
+# Enable actuator for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    io.jai.router: INFO

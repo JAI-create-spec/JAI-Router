@@ -1,1 +1,4 @@
+# Auto-configuration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  io.jai.router.spring.JAIRouterAutoConfiguration
 

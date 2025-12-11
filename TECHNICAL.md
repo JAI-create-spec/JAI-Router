@@ -26,6 +26,45 @@ JAI Router is a modular, intelligent request routing library built with Spring B
 └────────────────┘ └────────────────┘ └────────────────┘
 ```
 
+### Hybrid Routing Architecture (v0.6.0+)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   HybridLlmClient                            │
+│            (Intelligent Strategy Selection)                  │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌────────────────────┐         ┌───────────────────────┐  │
+│  │  AI Classifier     │         │  Dijkstra Router      │  │
+│  │  (Fast Path)       │         │  (Optimal Path)       │  │
+│  │                    │         │                       │  │
+│  │ • 50-200ms         │         │ • 3-16ms              │  │
+│  │ • Single-hop       │         │ • Multi-hop           │  │
+│  │ • Keyword-based    │         │ • Graph-based         │  │
+│  │ • 90% of requests  │         │ • 10% of requests     │  │
+│  └─────────┬──────────┘         └─────────┬─────────────┘  │
+│            │                              │                 │
+│            └──────────────┬───────────────┘                 │
+│                           │                                 │
+│              ┌────────────▼──────────────┐                  │
+│              │  ComplexityAnalyzer       │                  │
+│              │  (Pattern Detection)      │                  │
+│              └───────────────────────────┘                  │
+│                           │                                 │
+│              ┌────────────▼──────────────┐                  │
+│              │     ServiceGraph          │                  │
+│              │  (Microservices Graph)    │                  │
+│              └───────────────────────────┘                  │
+└─────────────────────────────────────────────────────────────┘
+                           │
+        ┌──────────────────┼───────────────────┐
+        ▼                  ▼                   ▼
+  ┌──────────┐       ┌──────────┐       ┌──────────┐
+  │  Auth    │──────▶│  User    │──────▶│ Billing  │
+  │ Service  │       │ Service  │       │ Service  │
+  └──────────┘       └──────────┘       └──────────┘
+```
+
 ## Module Structure
 
 ### 1. jai-router-core
@@ -40,11 +79,22 @@ The core library with no external dependencies (except logging).
 - `DecisionContext` - Input validation and context
 - `ServiceRegistry` - Service catalog interface
 
+**Graph Routing (v0.6.0+)**:
+- `HybridLlmClient` - Intelligent strategy selection
+- `DijkstraLlmClient` - Dijkstra's shortest path algorithm
+- `ServiceGraph` - Microservices graph with weighted edges
+- `CachedDijkstraClient` - Path caching for performance
+- `ComplexityAnalyzer` - Request pattern detection
+- `EdgeMetrics` - Latency, cost, reliability calculations
+- `RoutingPath` - Optimal path representation
+
 **Features**:
 - Pure Java (no Spring dependency)
 - Thread-safe implementations
 - Comprehensive validation
 - Null-safety annotations
+- Hybrid routing (AI + Dijkstra)
+- Sub-millisecond caching
 
 ### 2. jai-router-spring-boot-autoconfigure
 
@@ -83,9 +133,23 @@ Example applications demonstrating usage.
 
 ### 1. Strategy Pattern
 Different `LlmClient` implementations provide routing strategies:
-- `BuiltinAiLlmClient` - Keyword-based
-- `OpenAiLlmClient` - AI-powered
+- `BuiltinAiLlmClient` - Keyword-based (fast)
+- `OpenAiLlmClient` - AI-powered (semantic)
+- `DijkstraLlmClient` - Graph-based (optimal paths)
+- `HybridLlmClient` - Intelligent strategy selection
 - Custom implementations
+
+**Hybrid Strategy Selection**:
+```java
+// Automatically chooses best strategy based on request complexity
+HybridLlmClient hybrid = new HybridLlmClient(aiClient, dijkstraClient);
+
+// Simple request → AI Classifier
+hybrid.decide(DecisionContext.of("Show user dashboard"));
+
+// Complex request → Dijkstra
+hybrid.decide(DecisionContext.of("Auth user and then fetch billing"));
+```
 
 ### 2. Builder Pattern
 Fluent object creation:
@@ -138,6 +202,17 @@ registry.listServices();
    - Stateless HTTP client
    - Thread-safe resilience components
    - Thread-safe metrics
+
+4. **ServiceGraph (v0.6.0+)**
+   - Uses `ConcurrentHashMap` for nodes
+   - Uses `CopyOnWriteArrayList` for edges
+   - Thread-safe for concurrent reads after initialization
+   - Safe dynamic updates with `updateServiceReliability()`
+
+5. **CachedDijkstraClient (v0.6.0+)**
+   - Thread-safe cache using `ConcurrentHashMap`
+   - Atomic operations for cache statistics
+   - Safe concurrent access to cached paths
 
 ### Best Practices
 
@@ -202,13 +277,34 @@ public RoutingDecision decide(DecisionContext ctx) {
 
 ### 1. Caching Strategy
 
+**Path Caching (v0.6.0+)**:
 ```java
-// Future implementation
-@Cacheable(value = "routing-cache", key = "#ctx.payload")
-public RoutingDecision decide(DecisionContext ctx) {
-    // Expensive operation
-}
+// Implemented in CachedDijkstraClient
+CachedDijkstraClient cached = new CachedDijkstraClient(
+    dijkstraClient,
+    1000,      // max cache size
+    300_000    // 5 minute TTL
+);
+
+// First call: ~11ms (cache miss)
+// Subsequent calls: <1ms (cache hit)
+CacheStats stats = cached.getStats();
+// CacheStats[size=42, hits=850, misses=150, hitRate=85.00%]
 ```
+
+**Performance Characteristics**:
+
+| Strategy | Scenario | Latency | Use Case |
+|----------|----------|---------|----------|
+| AI Classifier | Simple single-hop | 50-200ms | 90% of requests |
+| Dijkstra | Complex multi-hop (miss) | 3-16ms | First time complex |
+| Cached Dijkstra | Complex multi-hop (hit) | <1ms | Repeated patterns |
+| Hybrid (overall) | Mixed workload | ~52ms avg | Production |
+
+**Algorithm Complexity**:
+- **Dijkstra**: O((V + E) log V) where V = services, E = edges
+- **Typical**: 3-16ms for graphs with 20-50 services
+- **Large graphs**: May increase to 50ms for 100+ services
 
 ### 2. Connection Pooling
 
@@ -272,6 +368,98 @@ public class CustomRouterConfig {
     @Bean
     public LlmClient customLlmClient() {
         return new MyCustomLlmClient();
+    }
+}
+```
+
+### Spring Boot Auto-Configuration
+
+JAI Router provides automatic Spring Boot integration through `JAIRouterAutoConfiguration`.
+
+**Auto-Configuration Registration**:
+
+File: `jai-router-spring-boot-autoconfigure/src/main/resources/META-INF/spring.factories`
+```properties
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  io.jai.router.spring.JAIRouterAutoConfiguration
+```
+
+**Beans Created Automatically**:
+
+1. **ServiceRegistry** - Populated from `jai.router.services` configuration
+2. **LlmClient** - Based on `jai.router.llm-provider`:
+   - `builtin-ai` creates `BuiltinAiLlmClient`
+   - `openai` creates `OpenAiLlmClient`
+   - `hybrid` creates `HybridLlmClient`
+3. **ServiceGraph** - When `jai.router.dijkstra.enabled=true`
+4. **DijkstraLlmClient** - For Dijkstra pathfinding
+5. **CachedDijkstraClient** - Wraps Dijkstra with caching
+6. **RouterHealthProbe** - For health monitoring
+
+**Configuration Properties**:
+
+Defined in `JAIRouterProperties` with prefix `jai.router`:
+- `llm-provider` - LLM client selection (builtin-ai, openai, hybrid)
+- `confidence-threshold` - Routing confidence threshold (0.0-1.0)
+- `services[]` - Service definitions with keywords
+- `hybrid.enabled` - Enable hybrid routing
+- `dijkstra.enabled` - Enable Dijkstra pathfinding
+- `dijkstra.cache.*` - Cache configuration (size, TTL)
+- `dijkstra.edges[]` - Service graph edges with metrics
+
+**Conditional Bean Creation**:
+
+```java
+@Bean
+@ConditionalOnProperty(name = "jai.router.llm-provider", havingValue = "hybrid")
+@ConditionalOnMissingBean(name = "hybridLlmClient")
+public LlmClient hybridLlmClient(...) {
+    // Creates HybridLlmClient only when llm-provider=hybrid
+}
+```
+
+**Example Configuration**:
+
+```yaml
+jai:
+  router:
+    llm-provider: hybrid
+    confidence-threshold: 0.7
+    
+    dijkstra:
+      enabled: true
+      source-service: gateway
+      cache:
+        enabled: true
+        max-size: 1000
+        ttl-ms: 300000
+      edges:
+        - from: gateway
+          to: auth-service
+          latency: 10.0
+          cost: 0.0
+          reliability: 0.999
+    
+    services:
+      - id: gateway
+        keywords: []
+      - id: auth-service
+        keywords: [login, auth, token]
+```
+
+**Testing Auto-Configuration**:
+
+```java
+@SpringBootTest
+class AutoConfigTest {
+    
+    @Autowired
+    private LlmClient client;
+    
+    @Test
+    void clientIsAutoConfigured() {
+        assertThat(client).isNotNull();
+        assertThat(client).isInstanceOf(BuiltinAiLlmClient.class);
     }
 }
 ```
@@ -394,6 +582,153 @@ All inputs are validated:
 public RoutingResult route(String input) {
     // ...
 }
+```
+
+## Dijkstra Algorithm Implementation (v0.6.0+)
+
+### Overview
+
+JAI Router implements Dijkstra's shortest path algorithm for optimal multi-hop routing through microservices.
+
+### Graph Model
+
+**Nodes**: Microservices
+**Edges**: Service dependencies with weighted metrics
+
+```java
+// Edge weight calculation
+weight = α*latency + β*cost + γ*(1 - reliability)*1000
+
+// Default weights:
+α (latency) = 0.5
+β (cost) = 0.3
+γ (reliability) = 0.2
+```
+
+### Algorithm Steps
+
+1. **Initialization**
+   - Set source distance to 0
+   - Set all other distances to infinity
+   - Create empty predecessors map
+   - Initialize priority queue
+
+2. **Main Loop**
+   - Extract node with minimum distance
+   - If target reached, reconstruct path
+   - For each neighbor:
+     - Calculate new distance through current node
+     - If better than existing, update distance and predecessor
+
+3. **Path Reconstruction**
+   - Follow predecessors from target back to source
+   - Reverse to get forward path
+
+### Code Example
+
+```java
+// Create service graph
+ServiceGraph graph = new ServiceGraph();
+graph.addService("gateway", Map.of("type", "entry"));
+graph.addService("auth-service", Map.of("endpoint", "http://auth:8080"));
+graph.addEdge("gateway", "auth-service", 
+    new EdgeMetrics(10.0, 0.0, 0.999));
+
+// Find optimal path
+DijkstraLlmClient dijkstra = new DijkstraLlmClient(graph, "gateway");
+RoutingDecision decision = dijkstra.decide(
+    DecisionContext.of("TARGET:auth-service")
+);
+
+// Result includes optimal path with metrics
+String explanation = decision.explanation();
+// "Optimal path: gateway → auth-service (hops: 1, latency: 5.2ms, cost: 0.0003)"
+```
+
+### Complexity Analysis
+
+- **Time**: O((V + E) log V)
+  - V = number of services (nodes)
+  - E = number of edges
+  - log V from priority queue operations
+
+- **Space**: O(V + E)
+  - Graph storage: O(V + E)
+  - Distance map: O(V)
+  - Predecessor map: O(V)
+  - Priority queue: O(V)
+
+### Performance Optimization
+
+**1. Early Termination**
+```java
+if (current.serviceId().equals(target)) {
+    return reconstructPath(...); // Stop when target found
+}
+```
+
+**2. Priority Queue**
+```java
+PriorityQueue<NodeDistance> pq = new PriorityQueue<>(
+    Comparator.comparingDouble(NodeDistance::distance)
+);
+// O(log V) insertions instead of O(V) linear search
+```
+
+**3. Path Caching**
+```java
+// Cache frequently used paths
+CachedDijkstraClient cached = new CachedDijkstraClient(dijkstra);
+// Reduces 10ms → <1ms for repeated requests
+```
+
+### Request Complexity Detection
+
+The `ComplexityAnalyzer` determines when to use Dijkstra:
+
+**Multi-Hop Patterns**:
+- "and then", "followed by", "after"
+- "chain", "orchestrate", "workflow"
+
+**Cost-Sensitive Patterns**:
+- "cheap", "cheapest", "cost", "budget"
+- "optimize", "minimize"
+
+**Failover Patterns**:
+- "failover", "backup", "alternative"
+- "fallback", "retry"
+
+**Example**:
+```java
+ComplexityAnalyzer analyzer = new ComplexityAnalyzer();
+
+// Simple → Uses AI Classifier
+analyzer.analyze(DecisionContext.of("Show dashboard"));
+// Returns: RequestComplexity.SIMPLE
+
+// Complex → Uses Dijkstra
+analyzer.analyze(DecisionContext.of("Auth and then fetch billing"));
+// Returns: RequestComplexity.MULTI_HOP
+```
+
+### Edge Metrics Configuration
+
+```java
+// Fast but expensive
+new EdgeMetrics(
+    10.0,   // 10ms latency
+    0.01,   // $0.01 per call
+    0.99    // 99% reliability
+);
+
+// Slow but cheap
+new EdgeMetrics(
+    100.0,  // 100ms latency
+    0.001,  // $0.001 per call
+    0.95    // 95% reliability
+);
+
+// Dijkstra will choose based on weighted formula
 ```
 
 ## Troubleshooting

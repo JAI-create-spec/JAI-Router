@@ -1,0 +1,294 @@
+# JAI Router Auto-Configuration Examples
+
+## Basic Built-in AI Configuration
+
+```yaml
+jai:
+  router:
+    llm-provider: builtin-ai
+    confidence-threshold: 0.7
+    services:
+      - id: auth-service
+        display-name: Authentication Service
+        keywords: [login, auth, token, verify, password, signin]
+      - id: analytics-service
+        display-name: Analytics Service
+        keywords: [report, dashboard, analytics, metrics, kpi, chart]
+      - id: billing-service
+        display-name: Billing Service
+        keywords: [billing, payment, invoice, charge, refund, subscription]
+```
+
+## OpenAI Configuration
+
+```yaml
+jai:
+  router:
+    llm-provider: openai
+    confidence-threshold: 0.75
+
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      model: gpt-4o-mini
+      temperature: 0.0
+      max-retries: 3
+      timeout-seconds: 30
+
+    services:
+      - id: auth-service
+        display-name: Authentication Service
+        keywords: [login, auth, token]
+      - id: analytics-service
+        display-name: Analytics Service
+        keywords: [report, analytics, metrics]
+```
+
+## Hybrid Routing Configuration (AI + Dijkstra)
+
+```yaml
+jai:
+  router:
+    llm-provider: hybrid
+    confidence-threshold: 0.7
+
+    # Hybrid routing settings
+    hybrid:
+      enabled: true
+      mode: auto  # auto, ai-only, dijkstra-only
+
+    # Dijkstra configuration
+    dijkstra:
+      enabled: true
+      source-service: gateway
+
+      # Path caching
+      cache:
+        enabled: true
+        max-size: 1000
+        ttl-ms: 300000  # 5 minutes
+
+      # Edge weight factors
+      weights:
+        latency: 0.5      # 50% weight on latency
+        cost: 0.3         # 30% weight on cost
+        reliability: 0.2  # 20% weight on reliability
+
+      # Service edges (connections)
+      edges:
+        - from: gateway
+          to: auth-service
+          latency: 10.0
+          cost: 0.0
+          reliability: 0.999
+
+        - from: auth-service
+          to: user-service
+          latency: 20.0
+          cost: 0.001
+          reliability: 0.99
+
+        - from: user-service
+          to: billing-service
+          latency: 30.0
+          cost: 0.002
+          reliability: 0.98
+
+        - from: billing-service
+          to: notification-service
+          latency: 15.0
+          cost: 0.001
+          reliability: 0.99
+
+    # Service definitions
+    services:
+      - id: gateway
+        display-name: API Gateway
+        keywords: []
+
+      - id: auth-service
+        display-name: Authentication Service
+        keywords: [login, auth, token, verify, signin, logout]
+
+      - id: user-service
+        display-name: User Management Service
+        keywords: [user, profile, account, personal, settings]
+
+      - id: billing-service
+        display-name: Billing Service
+        keywords: [billing, payment, invoice, charge, refund, subscription, card]
+
+      - id: notification-service
+        display-name: Notification Service
+        keywords: [email, sms, notification, alert, message, send]
+```
+
+## Dijkstra-Only Configuration
+
+```yaml
+jai:
+  router:
+    llm-provider: builtin-ai  # For fallback
+
+    dijkstra:
+      enabled: true
+      source-service: api-gateway
+
+      cache:
+        enabled: true
+        max-size: 500
+        ttl-ms: 600000  # 10 minutes
+
+      edges:
+        - from: api-gateway
+          to: auth-service
+          latency: 5.0
+          cost: 0.0
+          reliability: 0.999
+
+        - from: api-gateway
+          to: public-service
+          latency: 3.0
+          cost: 0.0
+          reliability: 0.999
+
+        - from: auth-service
+          to: private-service
+          latency: 8.0
+          cost: 0.001
+          reliability: 0.98
+
+    services:
+      - id: api-gateway
+        display-name: API Gateway
+        keywords: []
+      - id: auth-service
+        display-name: Auth
+        keywords: [auth, login]
+      - id: public-service
+        display-name: Public API
+        keywords: [public, info]
+      - id: private-service
+        display-name: Private API
+        keywords: [private, secure]
+```
+
+## Production Configuration with Monitoring
+
+```yaml
+jai:
+  router:
+    llm-provider: hybrid
+    confidence-threshold: 0.8
+
+    hybrid:
+      enabled: true
+      mode: auto
+
+    dijkstra:
+      enabled: true
+      source-service: load-balancer
+
+      cache:
+        enabled: true
+        max-size: 2000
+        ttl-ms: 180000  # 3 minutes
+
+      weights:
+        latency: 0.6    # Prioritize speed
+        cost: 0.2       # Moderate cost concern
+        reliability: 0.2 # Moderate reliability concern
+
+    # Large service mesh
+    services:
+      - id: load-balancer
+        display-name: Load Balancer
+        keywords: []
+      - id: auth-service
+        display-name: Authentication
+        keywords: [auth, login, token, verify, signin, logout, password]
+      - id: user-service
+        display-name: User Management
+        keywords: [user, profile, account, personal, settings, preferences]
+      - id: order-service
+        display-name: Order Processing
+        keywords: [order, purchase, buy, cart, checkout, product]
+      - id: payment-service
+        display-name: Payment Processing
+        keywords: [payment, billing, charge, refund, card, paypal, stripe]
+      - id: inventory-service
+        display-name: Inventory Management
+        keywords: [inventory, stock, warehouse, product, availability]
+      - id: shipping-service
+        display-name: Shipping & Logistics
+        keywords: [shipping, delivery, tracking, logistics, courier]
+      - id: notification-service
+        display-name: Notifications
+        keywords: [email, sms, notification, alert, message, push]
+
+# Enable Spring Boot monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+```
+
+## Environment-Specific Configuration
+
+### Development
+
+```yaml
+jai:
+  router:
+    llm-provider: builtin-ai  # Fast and free for dev
+    confidence-threshold: 0.6  # Lower threshold for testing
+
+logging:
+  level:
+    io.jai.router: DEBUG
+```
+
+### Production
+
+```yaml
+jai:
+  router:
+    llm-provider: hybrid
+    confidence-threshold: 0.85  # Higher threshold for prod
+
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      model: gpt-4o
+      timeout-seconds: 10  # Shorter timeout
+
+    dijkstra:
+      enabled: true
+      cache:
+        enabled: true
+        max-size: 5000  # Larger cache
+        ttl-ms: 120000  # 2 minutes
+
+logging:
+  level:
+    io.jai.router: INFO
+```
+
+## Testing Configuration
+
+```yaml
+jai:
+  router:
+    llm-provider: builtin-ai
+    confidence-threshold: 0.5
+
+    services:
+      - id: mock-service-1
+        display-name: Mock Service 1
+        keywords: [test1, mock1]
+      - id: mock-service-2
+        display-name: Mock Service 2
+        keywords: [test2, mock2]
+```
