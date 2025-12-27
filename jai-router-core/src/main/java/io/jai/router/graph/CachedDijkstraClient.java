@@ -7,10 +7,11 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Caches Dijkstra routing decisions to avoid repeated graph traversals.
@@ -36,9 +37,10 @@ public class CachedDijkstraClient implements LlmClient {
     private static final Logger log = LoggerFactory.getLogger(CachedDijkstraClient.class);
 
     private final LlmClient delegate;
-    private final Map<CacheKey, CacheEntry> cache = new ConcurrentHashMap<>();
+    private final Map<String, CacheEntry> cache;
     private final int maxSize;
     private final long ttlMs;
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     // Statistics
     private final AtomicLong hits = new AtomicLong(0);
@@ -68,6 +70,18 @@ public class CachedDijkstraClient implements LlmClient {
         this.maxSize = maxSize > 0 ? maxSize : 1000;
         this.ttlMs = ttlMs > 0 ? ttlMs : 300_000;
 
+        // LinkedHashMap with access-order for O(1) LRU eviction
+        this.cache = new LinkedHashMap<>(this.maxSize, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, CacheEntry> eldest) {
+                boolean shouldRemove = size() > CachedDijkstraClient.this.maxSize;
+                if (shouldRemove && log.isDebugEnabled()) {
+                    log.debug("Evicting cache entry: {}", eldest.getKey());
+                }
+                return shouldRemove;
+            }
+        };
+
         log.info("Initialized CachedDijkstraClient (maxSize: {}, ttl: {}ms)", this.maxSize, this.ttlMs);
     }
 
@@ -75,59 +89,54 @@ public class CachedDijkstraClient implements LlmClient {
     public @NotNull RoutingDecision decide(@NotNull DecisionContext ctx) {
         Objects.requireNonNull(ctx, "ctx cannot be null");
 
-        CacheKey key = CacheKey.from(ctx);
+        String key = ctx.payload();
 
-        // Check cache
-        CacheEntry entry = cache.get(key);
-        if (entry != null && !entry.isExpired()) {
-            hits.incrementAndGet();
-            log.debug("Cache hit for key: {}", key);
-            return entry.decision();
+        // Try read lock first for cache hit
+        lock.readLock().lock();
+        try {
+            CacheEntry entry = cache.get(key);
+            if (entry != null && !entry.isExpired()) {
+                hits.incrementAndGet();
+                log.debug("Cache hit for key: {}", key);
+                return entry.decision();
+            }
+        } finally {
+            lock.readLock().unlock();
         }
 
-        // Cache miss - delegate to underlying client
-        misses.incrementAndGet();
-        log.debug("Cache miss for key: {}", key);
+        // Cache miss - need write lock
+        lock.writeLock().lock();
+        try {
+            // Double-check after acquiring write lock
+            CacheEntry entry = cache.get(key);
+            if (entry != null && !entry.isExpired()) {
+                hits.incrementAndGet();
+                return entry.decision();
+            }
 
-        RoutingDecision decision = delegate.decide(ctx);
+            misses.incrementAndGet();
+            log.debug("Cache miss for key: {}", key);
 
-        // Store in cache
-        putInCache(key, decision);
+            RoutingDecision decision = delegate.decide(ctx);
+            cache.put(key, new CacheEntry(decision, System.currentTimeMillis() + ttlMs));
 
-        return decision;
-    }
-
-    /**
-     * Puts a decision in the cache, evicting oldest entry if full.
-     */
-    private void putInCache(CacheKey key, RoutingDecision decision) {
-        // Evict if cache is full
-        if (cache.size() >= maxSize) {
-            evictOldest();
+            return decision;
+        } finally {
+            lock.writeLock().unlock();
         }
-
-        cache.put(key, new CacheEntry(decision, System.currentTimeMillis() + ttlMs));
-    }
-
-    /**
-     * Evicts the oldest entry from the cache.
-     */
-    private void evictOldest() {
-        cache.entrySet().stream()
-                .min(Map.Entry.comparingByValue((e1, e2) ->
-                        Long.compare(e1.expiresAt(), e2.expiresAt())))
-                .ifPresent(entry -> {
-                    cache.remove(entry.getKey());
-                    log.debug("Evicted cache entry: {}", entry.getKey());
-                });
     }
 
     /**
      * Clears the cache.
      */
     public void clearCache() {
-        cache.clear();
-        log.info("Cache cleared");
+        lock.writeLock().lock();
+        try {
+            cache.clear();
+            log.info("Cache cleared");
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -142,21 +151,17 @@ public class CachedDijkstraClient implements LlmClient {
         long total = totalHits + totalMisses;
         double hitRate = total > 0 ? (double) totalHits / total : 0.0;
 
-        return new CacheStats(cache.size(), totalHits, totalMisses, hitRate);
+        lock.readLock().lock();
+        try {
+            return new CacheStats(cache.size(), totalHits, totalMisses, hitRate);
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     @Override
     public @NotNull String getName() {
         return "CachedDijkstraRouter";
-    }
-
-    /**
-     * Cache key based on payload.
-     */
-    private record CacheKey(String payload) {
-        static CacheKey from(DecisionContext ctx) {
-            return new CacheKey(ctx.payload());
-        }
     }
 
     /**
@@ -181,4 +186,5 @@ public class CachedDijkstraClient implements LlmClient {
         }
     }
 }
+
 

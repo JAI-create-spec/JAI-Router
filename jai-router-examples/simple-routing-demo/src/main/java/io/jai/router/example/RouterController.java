@@ -47,7 +47,7 @@ public class RouterController {
             String sanitized = validator.sanitize(payload);
             if (router == null) {
                 log.info("No Router bean available - returning fallback result");
-                return ResponseEntity.ok(new RoutingResult("none", 0.0, "No router bean available"));
+                return ResponseEntity.ok(RoutingResult.of("none", 0.0, "No router bean available"));
             }
 
             RoutingResult result = router.route(sanitized);

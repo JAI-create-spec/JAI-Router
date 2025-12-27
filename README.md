@@ -1,10 +1,5 @@
 # JAI Router
 
-[![Build Status](https://github.com/JAI-create-spec/JAI-Router/workflows/Build/badge.svg?branch=develop)](https://github.com/JAI-create-spec/JAI-Router/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Java 17+](https://img.shields.io/badge/Java-17%2B-orange.svg)](https://www.oracle.com/java/)
-[![Spring Boot 3.0+](https://img.shields.io/badge/Spring%20Boot-3.0%2B-green.svg)](https://spring.io/projects/spring-boot)
-
 A production-ready, AI-assisted routing engine for Java and Spring Boot that intelligently classifies natural language requests and routes them to appropriate microservices with confidence scoring and multi-hop orchestration support.
 
 ---
@@ -31,6 +26,8 @@ A production-ready, AI-assisted routing engine for Java and Spring Boot that int
 ## Overview
 
 JAI Router provides an intelligent abstraction layer for routing text-based requests to microservices. Unlike traditional routing that relies on URL patterns or static rules, JAI Router analyzes request content using AI to determine optimal service destinations.
+
+Note: The LLM enhancement strategy and roadmap are documented in `docs/LLM_ENHANCEMENT.md` — read this to learn about multi-model orchestration, embeddings, and continuous learning approaches.
 
 ### Core Components
 
@@ -194,7 +191,7 @@ curl -X POST http://localhost:8085/api/router/route \
 
 ## Installation
 
-### Build from Source
+### Build from Source (recommended)
 
 ```bash
 # Clone repository
@@ -204,9 +201,11 @@ cd JAI-Router
 # Build all modules
 ./gradlew clean build
 
-# Install to local Maven repository
+# Install to local Maven repository (for local testing)
 ./gradlew publishToMavenLocal
 ```
+
+> Note: This library is not published to Maven Central yet. Use `publishToMavenLocal` to consume locally until an official release is published.
 
 ### Add to Your Project
 
@@ -833,6 +832,8 @@ See [LICENSE](LICENSE) for full text.
 ---
 
 ## Contact
+
+For questions or to contribute, contact: rrezart.prebreza@gmail.com
 
 ### Get Help
 
