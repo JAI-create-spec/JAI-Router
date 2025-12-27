@@ -4,8 +4,6 @@ linter: jetbrains/qodana-jvm-community:2025.2
 
 projectJDK: "17"
 
-# Prefer a commonly-available distribution to reduce download failures in CI
-jdkDistribution: "temurin"
 
 profile:
   name: qodana.recommended
