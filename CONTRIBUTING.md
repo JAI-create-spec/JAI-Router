@@ -52,24 +52,9 @@ This project adheres to a code of conduct. By participating, you are expected to
 ./gradlew :jai-router-core:test
 ```
 
-### IDE Setup
+## Contact
 
-#### IntelliJ IDEA
-
-1. Open the project as a Gradle project
-2. Enable annotation processing: `Settings → Build → Compiler → Annotation Processors`
-3. Import code style: `Settings → Editor → Code Style → Import Scheme`
-
-#### Eclipse
-
-1. Import as an existing Gradle project
-2. Install Gradle Buildship plugin if not already installed
-
-#### VS Code
-
-1. Install Java Extension Pack
-2. Install Gradle for Java extension
-3. Open the project folder
+If you need help or want to coordinate larger contributions, contact: rrezart.prebreza@gmail.com
 
 ## Making Changes
 
@@ -481,4 +466,3 @@ If you have questions about contributing:
 - **Discussions**: https://github.com/JAI-create-spec/JAI-Router/discussions
 
 Thank you for contributing to JAI Router!
-
