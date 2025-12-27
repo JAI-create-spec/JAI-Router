@@ -35,7 +35,7 @@ public class RouterControllerTest {
     @Test
     void stringPayloadWithoutRouterUsesFallback() throws Exception {
         // simulate no router by making bean return null via mock? Here, since MockBean provides a bean, we set expectation
-        when(router.route("test")).thenReturn(new RoutingResult("test-service", 0.9, "ok"));
+        when(router.route("test")).thenReturn(RoutingResult.of("test-service", 0.9, "ok"));
 
         mvc.perform(post("/api/router/route")
                 .contentType(MediaType.APPLICATION_JSON)

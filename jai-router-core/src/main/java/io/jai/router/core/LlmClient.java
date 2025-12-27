@@ -62,6 +62,132 @@ public interface LlmClient {
     }
 
     /**
+     * Makes a routing decision with automatic retry on failure.
+     * <p>
+     * This method attempts to make a routing decision and retries on failure
+     * using exponential backoff. This is useful for handling transient failures
+     * in external LLM services.
+     * </p>
+     *
+     * @param ctx        the decision context containing input and metadata
+     * @param maxRetries maximum number of retry attempts (must be >= 0)
+     * @return routing decision, never null
+     * @throws LlmClientException   if all retry attempts fail
+     * @throws NullPointerException if ctx is null
+     * @throws IllegalArgumentException if maxRetries is negative
+     */
+    @NotNull
+    default RoutingDecision decideWithRetry(@NotNull DecisionContext ctx, int maxRetries) {
+        Objects.requireNonNull(ctx, "DecisionContext cannot be null");
+        if (maxRetries < 0) {
+            throw new IllegalArgumentException("maxRetries must be non-negative");
+        }
+
+        int attempts = 0;
+        Exception lastException = null;
+
+        while (attempts <= maxRetries) {
+            try {
+                return decide(ctx);
+            } catch (Exception ex) {
+                lastException = ex;
+                attempts++;
+
+                if (attempts <= maxRetries) {
+                    long backoffMs = (long) Math.pow(2, attempts) * 100; // Exponential backoff
+                    if (log.isDebugEnabled()) {
+                        log.debug("Retry attempt {}/{} after {}ms due to: {}",
+                                attempts, maxRetries, backoffMs, ex.getMessage());
+                    }
+
+                    try {
+                        Thread.sleep(backoffMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new LlmClientException("Retry interrupted", ie);
+                    }
+                }
+            }
+        }
+
+        throw new LlmClientException(
+                String.format("Failed after %d retry attempts", maxRetries),
+                lastException
+        );
+    }
+
+    /**
+     * Makes a routing decision with automatic retry and custom backoff strategy.
+     * <p>
+     * This method provides more control over the retry behavior by allowing
+     * custom backoff delays between retry attempts.
+     * </p>
+     *
+     * @param ctx              the decision context containing input and metadata
+     * @param maxRetries       maximum number of retry attempts (must be >= 0)
+     * @param initialBackoffMs initial backoff delay in milliseconds
+     * @param maxBackoffMs     maximum backoff delay in milliseconds
+     * @return routing decision, never null
+     * @throws LlmClientException   if all retry attempts fail
+     * @throws NullPointerException if ctx is null
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    @NotNull
+    default RoutingDecision decideWithRetry(
+            @NotNull DecisionContext ctx,
+            int maxRetries,
+            long initialBackoffMs,
+            long maxBackoffMs
+    ) {
+        Objects.requireNonNull(ctx, "DecisionContext cannot be null");
+        if (maxRetries < 0) {
+            throw new IllegalArgumentException("maxRetries must be non-negative");
+        }
+        if (initialBackoffMs <= 0) {
+            throw new IllegalArgumentException("initialBackoffMs must be positive");
+        }
+        if (maxBackoffMs < initialBackoffMs) {
+            throw new IllegalArgumentException("maxBackoffMs must be >= initialBackoffMs");
+        }
+
+        int attempts = 0;
+        Exception lastException = null;
+
+        while (attempts <= maxRetries) {
+            try {
+                return decide(ctx);
+            } catch (Exception ex) {
+                lastException = ex;
+                attempts++;
+
+                if (attempts <= maxRetries) {
+                    long backoffMs = Math.min(
+                            initialBackoffMs * (long) Math.pow(2, attempts - 1),
+                            maxBackoffMs
+                    );
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("Retry attempt {}/{} after {}ms due to: {}",
+                                attempts, maxRetries, backoffMs, ex.getMessage());
+                    }
+
+                    try {
+                        Thread.sleep(backoffMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new LlmClientException("Retry interrupted", ie);
+                    }
+                }
+            }
+        }
+
+        throw new LlmClientException(
+                String.format("Failed after %d retry attempts", maxRetries),
+                lastException
+        );
+    }
+
+    /**
      * Returns a human-readable name for this client implementation.
      * <p>
      * Default implementation returns the simple class name.
